@@ -39,6 +39,13 @@
   <span id="txtAccess">AI erişimi: açık</span>
 </div>
 
+<!-- ================= CANLI İZLEME ================= -->
+<div class="livebar" id="livebar" role="status" aria-live="polite">
+  <span class="lv-dot"></span>
+  <span class="lv-text" id="liveText">Ajan çalışıyor…</span>
+  <span class="lv-action" id="liveAction">—</span>
+</div>
+
 <!-- ================= SEKMELER ================= -->
 <nav class="tabs tabs-3">
   <button class="tab active" data-tab="ai">🤖 Yapay Zekâ</button>
@@ -51,8 +58,8 @@
   <!-- ---------- İLK EKRAN: SAĞLAYICI SEÇ ---------- -->
   <div class="card">
     <div class="card-title">
-      <h2>1. Hangi yapay zekâyı kullanacaksınız?</h2>
-      <p class="hint">Karta dokunun → giriş penceresi açılır → anahtar otomatik kaydedilir.</p>
+      <h2>Yapay zekâ sağlayıcısı</h2>
+      <p class="hint">Bir sağlayıcı seçin. Yetkilendirme penceresi açılır, anahtar otomatik ve şifreli olarak kaydedilir.</p>
     </div>
 
     <div class="provider-cards" id="providerCards">
@@ -200,8 +207,8 @@
   <!-- ---------- MİSYON: kalıcı hedef + otonom görev listesi ---------- -->
   <div class="card" id="missionCard">
     <div class="card-title">
-      <h2>🎯 Misyon (kalıcı hedef)</h2>
-      <p class="hint">Büyük hedefi yazın — ajan kendi görev listesini kurar ve durmadan yürütür.</p>
+      <h2>Misyon kontrolü</h2>
+      <p class="hint">Hedefi tanımlayın. Ajan bağımsız bir görev planı oluşturur, adım adım yürütür ve her adımı sayfada doğrular.</p>
     </div>
 
     <div id="missionSetup">
@@ -217,7 +224,7 @@
         </label>
       </div>
 
-      <button id="btnMissionStart" class="btn-primary" style="width:100%;margin-top:9px;">🚀 Misyonu başlat (planı oluştur)</button>
+      <button id="btnMissionStart" class="btn-primary" style="width:100%;margin-top:9px;">Misyonu başlat</button>
       <p class="micro" style="margin-top:6px;">
         Ajan hedefi 4-10 adıma böler, her adımı çalıştırır, sayfaya bakıp doğrular.
         Token biterse sağlayıcı değiştirir; tarayıcı kapansa bile kaldığı yerden sürer.
@@ -382,7 +389,7 @@
   <div class="card" id="aboutCard">
     <div class="card-head">
       <h3>ℹ️ Hakkında</h3>
-      <span class="muted" style="font-size:10px;">v1.6.4</span>
+      <span class="muted" style="font-size:10px;">v1.7.0</span>
     </div>
 
     <div class="lang-row">

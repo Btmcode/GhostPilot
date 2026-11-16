@@ -37,8 +37,17 @@
   let cursorEl = null;
   let rippleEl = null;
   let hudEl = null;
+  let targetEl = null;   // hedef halkası
+  let labelEl = null;    // eylem etiketi
   let rafPending = false;
   let hideTimer = null;
+  let agentBusy = false;   // ajan çalışırken imleç solmaz
+
+  // Eylem → kısa Türkçe etiket (canlı izleme sırasında gösterilir)
+  function act_label_hint(pulse, fallback) {
+    if (pulse) return fallback || "TIK";
+    return fallback || "";
+  }
 
   const KEY_MAP = {
     Enter: { key: "Enter", code: "Enter", keyCode: 13 },
@@ -92,10 +101,40 @@
         width: 22px; height: 22px;
         pointer-events: none;
         will-change: transform, opacity;
-        transition: opacity 0.25s ease;
+        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
         opacity: 0;
-        filter: drop-shadow(0 2px 6px rgba(0, 240, 200, 0.55));
+        filter: drop-shadow(0 2px 8px rgba(0, 240, 200, 0.8));
       }
+      /* Hedef halkası — ajanın nereye tıklayacağını gösterir */
+      .gp-target {
+        position: fixed;
+        top: 0; left: 0;
+        border: 2px solid #00f0c8;
+        border-radius: 8px;
+        pointer-events: none;
+        opacity: 0;
+        box-shadow: 0 0 0 3px rgba(0,240,200,.18), inset 0 0 12px rgba(0,240,200,.12);
+        transition: opacity .2s ease, transform .2s ease;
+        will-change: transform, opacity, width, height;
+      }
+      .gp-target.on { opacity: 1; }
+      .gp-label {
+        position: fixed;
+        top: 0; left: 0;
+        background: linear-gradient(135deg, #00f0c8, #0ea5e9);
+        color: #04121a;
+        font: 800 10px/1 system-ui, sans-serif;
+        letter-spacing: .4px;
+        padding: 4px 7px;
+        border-radius: 5px;
+        pointer-events: none;
+        opacity: 0;
+        white-space: nowrap;
+        box-shadow: 0 3px 10px rgba(0,240,200,.4);
+        transition: opacity .18s ease;
+        will-change: transform, opacity;
+      }
+      .gp-label.on { opacity: 1; }
       .gp-badge {
         position: absolute;
         left: 16px; top: 14px;
@@ -128,8 +167,10 @@
       }
       .gp-hud {
         position: fixed;
-        bottom: 12px; right: 12px;
-        background: rgba(10, 15, 28, 0.84);
+        bottom: 14px; right: 14px;
+        background: rgba(6, 12, 22, 0.92);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 6px 24px rgba(0,0,0,.4);
         border: 1px solid rgba(139, 92, 246, 0.45);
         color: #e2e8f0;
         font: 600 11px/16px ui-monospace, monospace;
@@ -152,15 +193,67 @@
     rippleEl = document.createElement("div");
     rippleEl.className = "gp-ripple";
 
+    targetEl = document.createElement("div");
+    targetEl.className = "gp-target";
+
+    labelEl = document.createElement("div");
+    labelEl.className = "gp-label";
+
     hudEl = document.createElement("div");
     hudEl.className = "gp-hud";
 
-    shadow.append(style, rippleEl, cursorEl, hudEl);
+    shadow.append(style, targetEl, rippleEl, cursorEl, labelEl, hudEl);
     (document.documentElement || document.body).appendChild(hostEl);
     return true;
   }
 
-  function renderGhostCursor(pulse = false, label = "AI") {
+  // Hedefin kısa okunabilir adı: "buton: Kaydet" gibi
+  function describeTarget(el) {
+    if (!el) return "";
+    const t = (el.tagName || "").toLowerCase();
+    const txt = (el.getAttribute && (el.getAttribute("aria-label") || el.getAttribute("title"))) ||
+                (el.innerText || el.value || "").trim().slice(0, 18);
+    const kind = t === "button" || el.type === "submit" ? "buton"
+      : t === "a" ? "bağlantı"
+      : t === "input" ? "alan"
+      : t === "textarea" ? "metin alanı"
+      : t;
+    return txt ? `${kind}: ${txt}` : kind;
+  }
+
+  // Ajanın hedeflediği öğeyi çerçevele (canlı izleme)
+  function highlightTarget(el, label = "", pulse = false) {
+    if (!virtualState.overlayEnabled || !ensureOverlay()) return;
+    if (!el || !el.getBoundingClientRect) {
+      if (targetEl) targetEl.classList.remove("on");
+      if (labelEl) labelEl.classList.remove("on");
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    if (!r || r.width === 0 && r.height === 0) return;
+    if (targetEl) {
+      targetEl.style.width = Math.max(6, r.width + 6) + "px";
+      targetEl.style.height = Math.max(6, r.height + 6) + "px";
+      targetEl.style.transform = `translate3d(${r.left - 3}px, ${r.top - 3}px, 0)`;
+      targetEl.classList.add("on");
+    }
+    if (labelEl && label) {
+      const lx = Math.max(4, Math.min(r.left, window.innerWidth - 120));
+      const ly = r.top > 26 ? r.top - 24 : r.bottom + 6;
+      labelEl.textContent = label;
+      labelEl.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
+      labelEl.classList.add("on");
+    }
+    clearTimeout(labelEl && labelEl.__t);
+    if (labelEl) labelEl.__t = setTimeout(() => labelEl.classList.remove("on"), 2200);
+  }
+
+  function clearHighlight() {
+    if (targetEl) targetEl.classList.remove("on");
+    if (labelEl) labelEl.classList.remove("on");
+  }
+
+  function renderGhostCursor(pulse = false, label = "AI", targetElm = null) {
     if (!virtualState.overlayEnabled) return;
     if (!ensureOverlay()) return;
 
@@ -176,6 +269,8 @@
       });
     }
 
+    if (targetElm) highlightTarget(targetElm, act_label_hint(pulse, label));
+
     if (pulse && rippleEl) {
       rippleEl.style.setProperty("--rx", `${virtualState.x}px`);
       rippleEl.style.setProperty("--ry", `${virtualState.y}px`);
@@ -184,12 +279,13 @@
       rippleEl.classList.add("active");
     }
 
+    // Kalıcı görünürlük: ajan çalışırken imleç solmaz, sadece hafifçe bekler.
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
-      if (cursorEl && virtualState.heldKeys.size === 0) {
-        cursorEl.style.opacity = "0.28";
+      if (cursorEl && virtualState.heldKeys.size === 0 && !agentBusy) {
+        cursorEl.style.opacity = "0.55";
       }
-    }, 3500);
+    }, 12000);
   }
 
   function updateKeyHud() {
@@ -517,15 +613,23 @@
       case "cursor_preview": {
         if (typeof act.x === "number") virtualState.x = act.x;
         if (typeof act.y === "number") virtualState.y = act.y;
-        renderGhostCursor(!!act.pulse, act.label || "AI");
-        return { ok: true, x: virtualState.x, y: virtualState.y };
+        if (typeof act.busy === "boolean") agentBusy = act.busy;
+        // Hedef öğe verildiyse onu çerçevele
+        let tel = null;
+        if (act.refId != null || act.selector) {
+          tel = resolveTarget(act).el;
+        } else if (typeof act.x === "number") {
+          tel = document.elementFromPoint(act.x, act.y);
+        }
+        renderGhostCursor(!!act.pulse, act.label || "AI", tel);
+        return { ok: true, x: virtualState.x, y: virtualState.y, target: tel?.tagName?.toLowerCase() || null };
       }
 
       case "resolve_ref": {
         const { x, y, el } = resolveTarget(act);
         virtualState.x = x;
         virtualState.y = y;
-        renderGhostCursor(false, "AI");
+        renderGhostCursor(false, "AI", el);
         return { ok: true, x, y, tag: el?.tagName?.toLowerCase() };
       }
 
@@ -547,7 +651,16 @@
         const btn = act.action === "right_click" ? 2 : 0;
         const mask = act.action === "right_click" ? 2 : 1;
 
+        // ── CANLI İZLEME: tıklamadan önce hedefi göster ──
+        // Kullanıcı ekranda ajanın nereye tıklayacağını net görsün.
+        agentBusy = true;
+        highlightTarget(el, describeTarget(el) || "tıklanıyor");
+        renderGhostCursor(false, "HEDEF", el);
+        // Yaklaşma animasyonu (~260 ms) — sadece görsel, girdiyi geciktirmez
+        await new Promise((r) => setTimeout(r, act.noDelay ? 0 : 260));
+
         dispatchSyntheticMouse("mousemove", x, y, 0, 0, el);
+        renderGhostCursor(true, "TIK", el);
         dispatchSyntheticMouse("mousedown", x, y, btn, mask, el);
         dispatchSyntheticMouse("mouseup", x, y, btn, 0, el);
 

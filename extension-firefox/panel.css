@@ -7,19 +7,42 @@
    GhostPilot Panel — sade, tek sütun, büyük dokunma hedefleri
    ============================================================================ */
 :root {
-  --bg: #070b14;
-  --card: #0d1524;
-  --card2: #0a1120;
-  --border: #1b2940;
-  --border-2: #24374f;
-  --text: #e8eef8;
-  --muted: #8fa1ba;
-  --accent: #3b82f6;
-  --accent-2: #60a5fa;
-  --green: #34d399;
-  --amber: #fbbf24;
-  --red: #f87171;
-  --purple: #a78bfa;
+  /* Yüzeyler — katmanlı, düşük kontrastlı profesyonel palet */
+  --bg: #06090f;
+  --bg-2: #080d16;
+  --card: #0e1622;
+  --card2: #0b121d;
+  --card-hi: #131e2e;
+  --border: #1a2635;
+  --border-2: #24384f;
+  --border-3: #2f4a68;
+
+  /* Metin */
+  --text: #eef4fb;
+  --text-2: #c3d2e4;
+  --muted: #8698ae;
+  --faint: #5c6f86;
+
+  /* Vurgu */
+  --accent: #2f80ed;
+  --accent-2: #5ba3f5;
+  --accent-glow: rgba(47,128,237,.28);
+  --green: #2fd39a;
+  --green-glow: rgba(47,211,154,.22);
+  --amber: #f5b642;
+  --amber-glow: rgba(245,182,66,.22);
+  --red: #ef5f5f;
+  --purple: #9d8cf7;
+  --cyan: #22d3ee;
+
+  /* Ölçü */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.35);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.45);
+  --ease: cubic-bezier(.22,1,.36,1);
 }
 
 * { box-sizing: border-box; }
@@ -30,10 +53,17 @@ body {
   min-width: 320px;
   background: var(--bg);
   color: var(--text);
-  font: 13.5px/1.55 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font: 13.5px/1.58 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   padding-bottom: 20px;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #23364c; border-radius: 8px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: #2f4a68; }
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; border-radius: 4px; }
 
 /* ---------------- ÜST BAR ---------------- */
 .topbar {
@@ -42,8 +72,10 @@ body {
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
-  background: linear-gradient(180deg, #0e1727, #0a1220);
+  background: linear-gradient(180deg, rgba(14,22,34,.96), rgba(8,13,22,.92));
+  backdrop-filter: blur(14px) saturate(140%);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03), var(--shadow-sm);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -754,3 +786,160 @@ code {
   min-width: 26px;
 }
 .icon-btn.lang-quick:hover { border-color: #3b82f6; background: rgba(59,130,246,.16); color: #bfdbfe; }
+
+/* ==========================================================================
+   v1.7.0 — Profesyonel katman: canlı izleme şeridi, iyileştirilmiş kartlar
+   ========================================================================== */
+
+/* ---- CANLI İZLEME ŞERİDİ (ajanın ne yaptığını gösterir) ---- */
+.livebar {
+  display: none;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  background: linear-gradient(135deg, rgba(34,211,238,.10), rgba(47,128,237,.08));
+  border: 1px solid rgba(34,211,238,.32);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--r-md);
+  box-shadow: 0 2px 12px rgba(34,211,238,.10);
+  animation: livebar-in .28s var(--ease);
+}
+.livebar.on { display: flex; }
+@keyframes livebar-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.livebar .lv-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--cyan); flex: 0 0 auto;
+  box-shadow: 0 0 0 0 rgba(34,211,238,.7);
+  animation: lv-pulse 1.6s infinite;
+}
+@keyframes lv-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34,211,238,.65); }
+  70% { box-shadow: 0 0 0 8px rgba(34,211,238,0); }
+  100% { box-shadow: 0 0 0 0 rgba(34,211,238,0); }
+}
+.livebar .lv-text {
+  flex: 1 1 auto; min-width: 0;
+  font: 600 11.5px/1.35 ui-monospace, "SF Mono", Menlo, monospace;
+  color: #a5f3fc;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.livebar .lv-action {
+  flex: 0 0 auto;
+  font: 800 9.5px/1 system-ui, sans-serif;
+  letter-spacing: .5px;
+  padding: 4px 7px; border-radius: 5px;
+  background: rgba(34,211,238,.16);
+  border: 1px solid rgba(34,211,238,.4);
+  color: #67e8f9;
+  text-transform: uppercase;
+}
+
+/* ---- KART rafinesi ---- */
+.card {
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.card:hover { border-color: var(--border-2); }
+.card-title h2 {
+  font-size: 13.5px;
+  font-weight: 750;
+  letter-spacing: -.15px;
+}
+.card-title .hint { color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+
+/* ---- Sağlayıcı kartları: seçili durum vurgusu ---- */
+.pcard {
+  border-radius: var(--r-md);
+  transition: transform .14s var(--ease), border-color .18s var(--ease),
+              background .18s var(--ease), box-shadow .18s var(--ease);
+}
+.pcard:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-3);
+  box-shadow: var(--shadow-md);
+}
+.pcard:active { transform: translateY(0) scale(.995); }
+.pcard.is-active, .pcard.active {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(47,128,237,.14), rgba(47,128,237,.05));
+  box-shadow: 0 0 0 1px rgba(47,128,237,.35), 0 4px 18px var(--accent-glow);
+}
+.pcard-badge.free {
+  background: rgba(47,211,154,.14);
+  border: 1px solid rgba(47,211,154,.4);
+  color: #6ee7b7;
+  letter-spacing: .4px;
+}
+
+/* ---- Butonlar ---- */
+button, .btn {
+  transition: background .16s var(--ease), border-color .16s var(--ease),
+              transform .1s var(--ease), box-shadow .16s var(--ease);
+}
+button:active:not(:disabled) { transform: translateY(1px) scale(.995); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ---- Günlük kutusu: terminal hissi ---- */
+#logBox, .logbox {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.62;
+  background: #05080e;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.5);
+}
+
+/* ---- Sekmeler ---- */
+.tabs {
+  background: rgba(8,13,22,.7);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  font-weight: 650;
+  letter-spacing: -.1px;
+  transition: color .16s var(--ease), background .16s var(--ease);
+}
+.tab.active {
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(47,128,237,.14), transparent);
+}
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 10%; right: 10%; bottom: -1px;
+  height: 2px; border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ---- Model rozeti (aktif model her zaman görünür) ---- */
+#modelActiveBadge {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .2px;
+  background: rgba(245,182,66,.10);
+  border: 1px solid rgba(245,182,66,.3);
+  border-radius: 6px;
+  padding: 5px 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ---- Durum şeridi ---- */
+.statusline {
+  background: rgba(8,13,22,.6);
+  border-bottom: 1px solid var(--border);
+  font-size: 10.5px;
+  letter-spacing: .1px;
+}
+
+/* ---- Erişilebilirlik: hareket azaltma ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}

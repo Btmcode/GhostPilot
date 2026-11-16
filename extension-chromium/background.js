@@ -1740,12 +1740,17 @@ async function resolveModel(p, cfg, opts = {}) {
   const tried = [];
   const cached = modelCache[p.id];
   const bad = new Set((opts.skip || []).filter(Boolean));
-  const chain = [
-    ...(opts.prefer ? [opts.prefer] : []),
-    p.model,
-    ...(MODEL_FALLBACKS[p.id] || []),
-    ...(cached ? [cached.model] : [])
-  ].filter((m) => m && !bad.has(m));
+  // Kullanıcı modeli ELLE seçtiyse yalnızca onu dene — sessizce başka modele
+  // geçmek "model değişmiyor" şikayetinin sebebiydi.
+  const pinned = String(p.model || "").trim();
+  const chain = (opts.strict && pinned)
+    ? [pinned]
+    : [
+        ...(opts.prefer ? [opts.prefer] : []),
+        p.model,
+        ...(MODEL_FALLBACKS[p.id] || []),
+        ...(cached ? [cached.model] : [])
+      ].filter((m) => m && !bad.has(m));
 
   for (const m of [...new Set(chain)]) {
     tried.push(m);
@@ -1803,6 +1808,8 @@ async function testAiConnection(cfgOverride = null) {
   const t0 = performance.now();
   let reply;
   try {
+    // strict: kullanıcının seçtiği modeli koru. queryLlm() içinde resolveModel
+    // çağrılıyorsa strict bayrağını geçir.
     reply = await queryLlm(cfg, 'Sadece şu JSON ile cevap ver: {"ok":true}', null);
   } catch (err) {
     // Model adı artık geçerli değilse: doğru modeli bul, kaydet, tekrar dene
@@ -2008,6 +2015,10 @@ async function missionRunNext() {
   try {
     await runAutonomousTask(goal, null, { taskMode: (await getConfig()).taskMode || "fresh_browser" });
   } catch (err) {
+    // Doğrulayıcı "kabul edildi" demesin diye hatayı işaretle.
+    agentState.lastError = String(err.message || err);
+    agentState.lastErrorAt = Date.now();
+    agentState.ranOnce = false;
     // Bu hata adımı GEÇTİ saymaz. Deneme hakkı düşülür ki misyon sonsuza
     // kadar dönmesin (önceden doğrulayıcı yanlışlıkla "tamamlandı" diyebiliyordu).
     const emsg = String(err.message || err);
@@ -2082,7 +2093,15 @@ async function missionRunNext() {
 // ---- 4) DOĞRULAYICI ----
 // Sayfaya bakıp adımın ölçütünü kontrol eder. Ölçüt yoksa ajanın raporuna güvenir.
 async function missionVerify(mission, step) {
+  // Ajan bu adımda teknik hata aldıysa ASLA "tamamlandı" denmez.
+  const hardErr = agentState && agentState.lastError;
+  if (hardErr && Date.now() - (agentState.lastErrorAt || 0) < 60000) {
+    return { ok: false, reason: `adım teknik hatayla kesildi: ${String(hardErr).slice(0, 120)}` };
+  }
   if (!step.done) {
+    if (!agentState || !agentState.ranOnce) {
+      return { ok: false, reason: "ajan hiç çalışmadı — ölçüt yok" };
+    }
     return { ok: true, reason: "ölçüt tanımlı değil — ajan raporu kabul edildi" };
   }
   try {
@@ -2235,6 +2254,9 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
 
   agentState = {
     running: true,
+    ranOnce: false,
+    lastError: null,
+    lastErrorAt: 0,
     goal: journal.goal,
     targetTabId: startTab.id,
     step: journal.step || 0,
@@ -2413,6 +2435,7 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
 
       if (decision.action === "done") {
         const summary = decision.summary || "Görev başarıyla bitirildi.";
+        agentState.ranOnce = true;   // ajan gerçekten çalıştı
         pushLog("success", `Tamamlandı: ${summary}`);
         await journalPatch({ status: "done", summary, step });
         break;
@@ -2726,6 +2749,36 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   if (msg.type === "CLEAR_PROVIDER_KEY") {
     clearProviderKey(msg.provider).then(() => sendResponse({ ok: true }));
+    return true;
+  }
+
+  // Model seçimi — kalıcı kaydet (provider'a dokunmadan)
+  if (msg.type === "SET_MODEL") {
+    (async () => {
+      const id = msg.provider || (await getConfig()).activeProvider;
+      const model = String(msg.model || "").trim();
+      if (!model) throw new Error("Model adı boş olamaz.");
+      await saveProviderKey(id, { model });
+      await saveConfig({ aiModel: model });
+      // Model önbelleğini temizle — eski model adı geri gelmesin
+      if (modelCache[id]) modelCache[id] = null;
+      const preset = AI_PROVIDERS[id] || AI_PROVIDERS.custom;
+      pushLog("success", `🧠 Model seçildi: ${model} (${preset.name})`);
+      broadcastUiState();
+      return { model, provider: id };
+    })()
+      .then((r) => sendResponse({ ok: true, result: r }))
+      .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  }
+
+  // Mevcut modeli oku — panel açılışta senkron için
+  if (msg.type === "GET_MODEL") {
+    (async () => {
+      const cfg = await getConfig();
+      const p = resolveProvider(cfg);
+      sendResponse({ ok: true, result: { provider: p.id, model: p.model } });
+    })();
     return true;
   }
 

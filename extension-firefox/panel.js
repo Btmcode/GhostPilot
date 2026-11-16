@@ -743,9 +743,35 @@
     }
   });
 
-  $("modelSelect").addEventListener("change", (e) => {
-    if (e.target.value) $("cfgAiModel").value = e.target.value;
+  $("modelSelect").addEventListener("change", async (e) => {
+    const model = e.target.value;
+    if (!model) return;
+    $("cfgAiModel").value = model;
+    // Yalnız kutuya yazmak yetmiyordu: model bir sonraki istekte
+    // keyStore/aiModel'den okunuyor. Kalıcı kaydet.
+    const res = await sendBg({ type: "SET_MODEL", provider: state.provider, model });
+    if (res.ok) {
+      modelBadge(model);
+      showResult("ok", `🧠 Aktif model: <b>${model}</b> — kalıcı olarak kaydedildi.`);
+    } else {
+      showResult("err", `❌ Model kaydedilemedi: ${res.error || ""}`);
+    }
   });
+
+  // Panelde seçili modeli sürekli göster (kullanıcı hangi modelde olduğunu görsün)
+  function modelBadge(model) {
+    let el = $("modelActiveBadge");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "modelActiveBadge";
+      el.style.cssText =
+        "margin:6px 0 0;font-size:11px;color:#f59e0b;font-weight:700;" +
+        "display:flex;align-items:center;gap:6px";
+      const host = $("modelSelect") && $("modelSelect").parentElement;
+      if (host) host.appendChild(el);
+    }
+    el.textContent = "● aktif model: " + (model || "—");
+  }
 
   // ---------------------------------------------------------------- test
   $("btnTestAi").addEventListener("click", async () => {
@@ -776,6 +802,7 @@
       } else {
         showResult("ok", `✅ ${r.provider} · ${r.model} · ${r.latencyMs} ms — çalışıyor!`);
       }
+      modelBadge(r.model);
     } else {
       const msg = res.error || "Bağlantı kurulamadı.";
       showResult("err", `❌ ${msg}`, errorActionsFor(msg));
@@ -910,7 +937,40 @@
     while (box.children.length > 120) box.removeChild(box.firstChild);
   }
 
+  // ---- CANLI İZLEME: ajanın son eylemini şeritte göster ----
+  function renderLivebar(agentState) {
+    const bar = $("livebar");
+    if (!bar) return;
+    const running = !!agentState?.running;
+    bar.classList.toggle("on", running);
+    if (!running) return;
+
+    const logs = agentState.logs || [];
+    const last = logs.length ? logs[logs.length - 1] : null;
+    const txt = $("liveText");
+    if (txt && last) {
+      txt.textContent = String(last.message || "").replace(/\s+/g, " ").slice(0, 110);
+    }
+    // Eylem türünü son satırdan çıkar
+    const a = $("liveAction");
+    if (a) {
+      const m = String(last?.message || "");
+      let tag = "ÇALIŞIYOR";
+      if (/tıkla|click|TIK/i.test(m)) tag = "TIKLAMA";
+      else if (/yaz|type|YAZI/i.test(m)) tag = "YAZMA";
+      else if (/git|navigate|aç/i.test(m)) tag = "GEZİNME";
+      else if (/oku|snapshot|read/i.test(m)) tag = "OKUMA";
+      else if (/bekle|wait/i.test(m)) tag = "BEKLEME";
+      else if (/doğrula|verify/i.test(m)) tag = "DOĞRULAMA";
+      else if (/hata|error/i.test(m)) tag = "HATA";
+      a.textContent = tag;
+      a.style.color = tag === "HATA" ? "#fca5a5" : "";
+      a.style.borderColor = tag === "HATA" ? "rgba(239,95,95,.5)" : "";
+    }
+  }
+
   function renderState(daemonStatus, agentState) {
+    renderLivebar(agentState);
     const on = !!daemonStatus?.connected;
     $("dotDaemon").className = `dot ${on ? "on" : "off"}`;
     $("txtDaemon").textContent = on
@@ -1259,6 +1319,16 @@
   // ---------------------------------------------------------------- init
   async function init() {
     buildProviderSelect();
+
+    // Aktif modeli backend'den oku ve rozeti doldur (panel yeniden açıldığında
+    // kullanıcı hangi modelde olduğunu net görsün)
+    try {
+      const gm = await sendBg({ type: "GET_MODEL" });
+      if (gm.ok && gm.result?.model) {
+        $("cfgAiModel").value = gm.result.model;
+        modelBadge(gm.result.model);
+      }
+    } catch (_) {}
 
     const info = await sendBg({ type: "GET_OAUTH_INFO" });
     if (info && info.ok) {
