@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "GhostPilot — Eşzamanlı AI Fare/Klavye & Masaüstü Köprüsü",
   "short_name": "GhostPilot",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Fiziksel farenizi ve klavyenizi engellemeden tarayıcıları, web oyunlarını ve masaüstü pencerelerini kontrol eden ultra hafif hibrit AI eklentisi.",
   "icons": {
     "16": "icons/icon16.png",

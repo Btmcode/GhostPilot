@@ -51,6 +51,9 @@ const DEFAULT_CONFIG = {
   googleTokenExpiry: 0,
   // ---- Kalıcı anahtar deposu: { openai: {...}, gemini: {...} } ----
   keyStore: {},
+  // ---- Kalıcı durum (silinmemeli) ----
+  gp_journal: null,            // görev hafızası
+  gp_mission: null,            // misyon durumu
   // ---- Görev yürütme stratejisi ----
   // fresh_browser: görev için AYRI pencere açar, kullanıcının pencerelerine dokunmaz
   // reuse_tab:     mevcut sekmeyi kullanır
@@ -67,6 +70,7 @@ const DEFAULT_CONFIG = {
 //  bile görev kaldığı yerden devam eder.
 // ============================================================================
 const JOURNAL_KEY = "gp_journal";
+const MISSION_KEY_EARLY = "gp_mission";
 
 async function journalLoad() {
   const cfg = await getConfig();
@@ -263,7 +267,9 @@ let rpcSeq = 1;
 // Storage helper compatible with callback & promise APIs
 function getConfig() {
   return new Promise((resolve) => {
-    api.storage.local.get(DEFAULT_CONFIG, (items) => {
+    // ÖNEMLİ: anahtar listesiyle süzmeyin — aksi halde gp_mission, gp_journal,
+    // keyStore gibi dinamik anahtarlar varsayılanlara düşer ve kaybolur.
+    api.storage.local.get(null, (items) => {
       resolve({ ...DEFAULT_CONFIG, ...(items || {}) });
     });
   });
@@ -553,7 +559,14 @@ function langLine(lang) {
 function friendlyTabError(tabId, err) {
   const raw = String(err && err.message ? err.message : err);
   const e = new Error(raw);
-  if (/Cannot access a chrome-extension:\/\/ URL of different extension/i.test(raw) ||
+  if (/Cannot access a chrome-extension:\/\/ URL of different extension/i.test(raw)) {
+    e.message =
+      "Hedef sekme başka bir EKLENTİNİN sayfası — Chrome güvenlik gereği buraya izin vermez. " +
+      "Çözüm: görevi normal bir web sitesi sekmesinde başlatın (örn. github.com). " +
+      "GhostPilot'un kendi paneline görev vermeye çalışıyorsanız, panel zaten ajanı çalıştırır.";
+    e.gpKind = "bad_target";
+    return e;
+  } else if (
       /Cannot access contents of (the )?url "?(chrome|extension|moz-extension)/i.test(raw) ||
       /Cannot access (a )?(chrome|about|edge):/i.test(raw)) {
     e.message =
@@ -585,6 +598,21 @@ const RESTRICTED_PREFIXES = [
   "https://microsoftedge.microsoft.com/addons", "https://addons.mozilla.org"
 ];
 
+// Hesap/ayar sayfaları: teknik olarak script enjekte edilebilir ama otomasyon
+// için uygun değil (CAPTCHA, 2FA, oturum doğrulama riski). Nazikçe uyarılır.
+const SENSITIVE_SETTINGS_URLS = [
+  "github.com/settings", "github.com/account", "github.com/login", "github.com/session",
+  "accounts.google.com", "myaccount.google.com/security",
+  "paypal.com", "appleid.apple.com", "login.microsoftonline.com",
+  "facebook.com/settings", "x.com/settings", "instagram.com/accounts"
+];
+
+function isSensitiveSettingsUrl(url) {
+  if (!url) return false;
+  const u = String(url).toLowerCase();
+  return SENSITIVE_SETTINGS_URLS.some((p) => u.includes(p));
+}
+
 function isRestrictedUrl(url) {
   if (!url) return true;
   const u = String(url).toLowerCase();
@@ -600,6 +628,11 @@ function tabProblem(tab) {
     return `Hedef sekme bir tarayıcı eklentisinin kendi sayfası (${u.slice(0, 60)}…). ` +
            `Chrome güvenlik gereği başka eklentilerin sayfalarına izin vermez. ` +
            `Çözüm: normal bir web sitesi sekmesi açın (örn. https://www.blogger.com) ve görevi o sekmede başlatın.`;
+  }
+  if (isSensitiveSettingsUrl(u)) {
+    return `Bu bir hesap/ayar sayfası (${u.slice(0, 50)}…). GhostPilot burada çalışabilir ama ` +
+           `hesap güvenliği için önerilmez — 2FA/CAPTCHA oturumu kilitleyebilir. ` +
+           `Mümkünse normal bir içerik sayfası kullanın veya işlemi elle yapın.`;
   }
   if (isRestrictedUrl(u)) {
     return `Bu adres tarayıcı tarafından korunuyor (${u.slice(0, 60)}…) — otomasyona kapalı. Normal bir web sayfası kullanın.`;
@@ -1897,8 +1930,13 @@ async function missionStart(objective, opts = {}) {
 // ---- 3) SIRADAKİ ADIMI ÇALIŞTIR ----
 async function missionRunNext() {
   if (agentState.running) return { skipped: true, reason: "agent_busy" };
-  const m = await missionLoad();
-  if (!m) throw new Error("Misyon yok.");
+  let m = await missionLoad();
+  // Kayıt henüz görünmüyorsa kısa süre bekle (yazma sıralaması yarışı)
+  for (let i = 0; !m && i < 5; i++) {
+    await new Promise((r) => setTimeout(r, 120));
+    m = await missionLoad();
+  }
+  if (!m) throw new Error("Misyon bulunamadı. Panelden yeniden başlatın.");
   if (m.status !== "running") return { skipped: true, reason: m.status };
 
   const idx = m.steps.findIndex((st) => st.status === "todo" || st.status === "failed");
