@@ -40,3 +40,17 @@ xvfb-run -a node tests/e2e-ajan.mjs
 - Testler kendi yerel HTTP sunucularını (8899, 8900) açar ve kapatır.
 - Profil klasörleri `profile*` altında; her koşuda silinir.
 - `e2e-ajan.mjs` için internet/API anahtarı **gerekmez** — LLM taklit edilir.
+
+## Test dosyaları
+
+| Dosya | Ne test eder |
+|---|---|
+| `e2e-tarayici.mjs` | Panel UI, erişim kapısı, snapshot gizliliği, acil durdurma (23 test) |
+| `e2e-gizlilik.mjs` | Hassas veri sızıntısı (TCKN/OTP/şifre/kart) |
+| `e2e-ajan.mjs` | Gerçek tıklama, LLM döngüsü, görev hafızası |
+| `e2e-bagis.mjs` | Bağış penceresi haftalık mantık (10 test) |
+| `e2e-misyon.mjs` | Misyon planlama + `Misyon yok` regresyonu |
+| `e2e-cift-kurulum.mjs` | İki GhostPilot kopyası → `different extension` kurtarma |
+| `e2e-bagis-url.mjs` | Bağış bağlantılarının `btmcode` olduğunu doğrular |
+
+**Çalıştırma:** `xvfb-run -a node tests/e2e-tarayici.mjs`

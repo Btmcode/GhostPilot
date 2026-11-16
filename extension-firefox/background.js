@@ -661,11 +661,44 @@ async function getActiveOrTargetTab(explicitTabId = null) {
   }
   const problem = tabProblem(tab);
   if (problem) {
+    // KURTARMA: aktif sekme tarayıcı/eklenti sayfasıysa (örn. bağış penceresi
+    // veya başka bir GhostPilot kopyası), kullanılabilir bir web sekmesine geç.
+    if (!explicitTabId) {
+      const fallback = await findWebTab(tab.id);
+      if (fallback) {
+        pushLog("info", `↩ Aktif sekme kullanılamıyor (${(tab.url || "").slice(0, 45)}…) — bunun yerine kullanılabilir sekme seçildi.`);
+        return fallback;
+      }
+    }
     const e = new Error(problem);
     e.gpKind = "bad_target";
     throw e;
   }
   return tab;
+}
+
+// Birden fazla GhostPilot kopyası kurulu mu? (eski zip + yeni klasör gibi)
+// Kendi ID'miz dışında bir panel.html/donate.html sekmesi görürsek uyar.
+async function detectDuplicateCopies() {
+  try {
+    const tabs = await new Promise((r) => api.tabs.query({}, (x) => r(x || [])));
+    const own = api.runtime.id;
+    const foreign = new Set();
+    for (const t of tabs) {
+      const u = t.url || "";
+      const m = u.match(/^chrome-extension:\/\/([a-p]{32})\/(panel|donate)\.html/);
+      if (m && m[1] !== own) foreign.add(m[1]);
+    }
+    if (foreign.size) {
+      const ids = [...foreign].join(", ");
+      pushLog("error",
+        `⚠ Aynı anda ${foreign.size + 1} adet GhostPilot kurulu görünüyor (diğer ID: ${ids}). ` +
+        `Bu "Cannot access a chrome-extension:// URL of different extension" hatasının tek sebebidir. ` +
+        `Çözüm: chrome://extensions → fazladan olan GhostPilot'u KALDIR, sadece bir tanesi kalsın.`);
+      return { duplicates: true, ids };
+    }
+    return { duplicates: false };
+  } catch (_) { return { duplicates: false }; }
 }
 
 // Kontrol edilebilir bir web sekmesi bul (yeni sekme eklentisi / chrome:// değil)
@@ -1975,7 +2008,32 @@ async function missionRunNext() {
   try {
     await runAutonomousTask(goal, null, { taskMode: (await getConfig()).taskMode || "fresh_browser" });
   } catch (err) {
-    pushLog("warn", `Adım ${step.id} çalıştırılamadı: ${err.message || err}`);
+    // Bu hata adımı GEÇTİ saymaz. Deneme hakkı düşülür ki misyon sonsuza
+    // kadar dönmesin (önceden doğrulayıcı yanlışlıkla "tamamlandı" diyebiliyordu).
+    const emsg = String(err.message || err);
+    pushLog("warn", `Adım ${step.id} çalıştırılamadı: ${emsg}`);
+    if (/different extension|Cannot access a chrome-extension/i.test(emsg)) {
+      pushLog("error",
+        "SEBEP: Aynı anda birden fazla GhostPilot kurulu. chrome://extensions sayfasında " +
+        "fazladan olanı KALDIRIN (yalnızca tek kopya kalmalı), sonra misyonu yeniden başlatın.");
+    }
+    const mx = await missionLoad();
+    if (mx) {
+      const sx = mx.steps.find((x) => x.id === step.id);
+      if (sx) {
+        sx.status = (sx.attempts || 1) >= 3 ? "failed" : "todo";
+        sx.notes.push(`✗ çalıştırılamadı: ${emsg.slice(0, 160)}`);
+        mx.log.push({ at: Date.now(), step: sx.id, ok: false, title: sx.title, reason: emsg.slice(0, 160) });
+        if (mx.log.length > 80) mx.log.shift();
+        if (sx.status === "failed") {
+          mx.status = "paused";
+          pushLog("error", `Adım ${sx.id} 3 denemede başarısız — misyon duraklatıldı.`);
+          try { await api.alarms.clear(MISSION_ALARM); } catch (_) {}
+        }
+        await missionSave(mx);
+      }
+    }
+    return { error: emsg };
   }
 
   // ---- 4) DOĞRULAYICI: adım gerçekten tamamlandı mı? ----
@@ -2124,6 +2182,8 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
   if (agentState.running) throw new Error("Zaten çalışan bir görev var.");
   await guardAccess("agent", explicitTabId != null ? explicitTabId : null);
   const cfg = await getConfig();
+  // Her görevde kontrol et — çift kurulum bu hatanın tek sebebi.
+  const dup = await detectDuplicateCopies();
   const taskMode = opts.taskMode || cfg.taskMode || "fresh_browser";
 
   // ---- 1) GÖREV PENCERESİ ----
@@ -2141,14 +2201,22 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
     } catch (err) {
       if (err.gpKind !== "bad_target") throw err;
       const alt = await findWebTab();
-      if (!alt) {
-        throw new Error(
-          "Kontrol edilebilir bir web sekmesi bulunamadı.\n" +
-          "• Yeni sekme sayfası, chrome:// sayfaları ve diğer eklentilerin sayfaları otomasyona kapalıdır.\n" +
-          "• Çözüm: görev modunu \"Yeni tarayıcı penceresi\" yapın."
-        );
+      if (alt) {
+        startTab = alt;
+        pushLog("info", `↩ Kullanılabilir sekme seçildi: ${(alt.url || "").slice(0, 55)}`);
+      } else {
+        // Hiç kullanılabilir sekme yok → görev penceresi aç (otomatik kurtarma).
+        // Önceden burada hata fırlatılıyordu; artık kendiliğinden devam eder.
+        pushLog("warn",
+          "Kullanılabilir web sekmesi yok (yeni sekme / chrome:// / eklenti sayfaları otomasyona kapalı). " +
+          "Görev penceresi otomatik açılıyor.");
+        const firstUrl = extractFirstUrl(goal);
+        const win = await openTaskWindow(goal, firstUrl);
+        startTab = win.tab;
+        if (dup.duplicates) {
+          pushLog("error", "⚠ Çift kurulum tespit edildi — bu hata genelde iki GhostPilot kurulu olmasından kaynaklanır.");
+        }
       }
-      startTab = alt;
     }
   }
 
@@ -2170,7 +2238,7 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
     goal: journal.goal,
     targetTabId: startTab.id,
     step: journal.step || 0,
-    logs: [],
+    logs: agentState.logs || [],   // önceki uyarıları KORU (çift kurulum vb.)
     abort: false,
     journal
   };

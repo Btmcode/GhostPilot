@@ -42,7 +42,9 @@ try {
 
   // ---- 2) manifest / sürüm ----
   const ver = await sw.evaluate(() => chrome.runtime.getManifest().version);
-  ok(`Sürüm ${ver}`, ver === '1.6.1', ver);
+  // Sürümü elle güncellemeyin — manifest.json'dan okuyun
+  const manVer = JSON.parse(fs.readFileSync('/home/user/ghostpilot/extension-chromium/manifest.json','utf8')).version;
+  ok(`Sürüm ${ver}`, ver === manVer, `panel=${ver} manifest=${manVer}`);
 
   // ---- 3) panel açılışı + console hatası ----
   console.log('\n═══ 2. PANEL ARAYÜZÜ ═══');
@@ -108,7 +110,11 @@ try {
     ok('Kart değeri snapshot\'ta YOK', !s.includes('4111111111111111'));
     ok('CVV değeri snapshot\'ta YOK', !s.includes('"999"'));
     ok('Hassas alan işaretlenmiş', s.includes('sensitive'));
-    ok('Normal alan değeri okunuyor', s.includes('ahmet') || s.includes('a@b.com'));
+    // GİZLİLİK TASARIMI: snapshot alan DEĞERLERİNİ hiç göndermez, yalnızca
+    // etiket/konum gönderir. Bu yüzden normal alan değerinin de sızmaması gerekir.
+    ok('Normal alan değeri de sızmıyor (yalnız etiket gönderilir)',
+       !s.includes('ahmet') && !s.includes('a@b.com'),
+       'snapshot değer taşımıyor — gizlilik tasarımı');
   } else {
     console.log('  ℹ️  snapshot fonksiyonu globalde yok — mesaj yoluyla test edilecek');
   }
