@@ -16,10 +16,10 @@
 </p>
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.2-green.svg)]()
+[![Version](https://img.shields.io/badge/version-1.6.3-green.svg)]()
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
 [![Telemetry](https://img.shields.io/badge/telemetry-none-success.svg)](SECURITY.md)
-[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95-Buy%20me%20a%20coffee-f59e0b?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/devcloudpy)
+[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95-Buy%20me%20a%20coffee-f59e0b?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/btmcode)
 
 </div>
 
@@ -97,13 +97,13 @@ grep -rn "fetch(\|WebSocket(" extension-chromium/ native-bridge/
 
 <div align="center">
 
-[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95_Buy_me_a_coffee-buymeacoffee.com%2Fdevcloudpy-f59e0b?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/devcloudpy)
+[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95_Buy_me_a_coffee-buymeacoffee.com%2Fbtmcode-f59e0b?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/btmcode)
 [![GitHub](https://img.shields.io/badge/%E2%AD%90_Star-github.com%2FBtmcode-181717?style=for-the-badge&logo=github)](https://github.com/Btmcode/GhostPilot)
 
 </div>
 
 GhostPilot hoàn toàn miễn phí và mã nguồn mở. Không quảng cáo, không đo từ xa, không gói trả phí.
-Nếu nó giúp ích cho bạn, hãy **[mời tôi một ly cà phê](https://buymeacoffee.com/devcloudpy)** ☕
+Nếu nó giúp ích cho bạn, hãy **[mời tôi một ly cà phê](https://buymeacoffee.com/btmcode)** ☕
 
 > 💡 Tiện ích hiển thị một cửa sổ ủng hộ lịch sự khi cài lần đầu, sau đó tối đa một lần mỗi tuần. Nhấn **"Không hiển thị lại"** và nó sẽ không bao giờ xuất hiện nữa.
 

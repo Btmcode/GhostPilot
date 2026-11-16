@@ -10,7 +10,7 @@
  */
 
 const DONATE = {
-  url: "https://buymeacoffee.com/devcloudpy",
+  url: "https://buymeacoffee.com/btmcode",
   repo: "https://github.com/btmcode",
   WEEK_MS: 7 * 24 * 60 * 60 * 1000
 };

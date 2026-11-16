@@ -109,7 +109,7 @@ const GP_I18N = {
 "MIT (açık kaynak)": "MIT (open source)",
 "Kaynak kodu": "Source code",
 "Bağlantılar": "Links",
-"☕ Destek ol — buymeacoffee.com/devcloudpy": "☕ Buy me a coffee — buymeacoffee.com/devcloudpy",
+"☕ Destek ol — buymeacoffee.com/btmcode": "☕ Buy me a coffee — buymeacoffee.com/btmcode",
 "© 2026 BTM Code. MIT lisansı altında paylaşılmıştır; telif bildirimi korunduğu sürece kopyalayabilir, değiştirebilir ve dağıtabilirsiniz.": "© 2026 BTM Code. Released under the MIT license; you may copy, modify and redistribute as long as this notice is preserved.",
 "Gizlilik:": "Privacy:",
 "hiçbir telemetri yok · anahtarlarınız yalnızca bu tarayıcıda · şifre alanları hiç okunmaz.": "no telemetry at all · your keys stay in this browser only · password fields are never read.",

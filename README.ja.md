@@ -16,10 +16,10 @@
 </p>
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.2-green.svg)]()
+[![Version](https://img.shields.io/badge/version-1.6.3-green.svg)]()
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
 [![Telemetry](https://img.shields.io/badge/telemetry-none-success.svg)](SECURITY.md)
-[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95-Buy%20me%20a%20coffee-f59e0b?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/devcloudpy)
+[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95-Buy%20me%20a%20coffee-f59e0b?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/btmcode)
 
 </div>
 
@@ -97,13 +97,13 @@ grep -rn "fetch(\|WebSocket(" extension-chromium/ native-bridge/
 
 <div align="center">
 
-[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95_Buy_me_a_coffee-buymeacoffee.com%2Fdevcloudpy-f59e0b?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/devcloudpy)
+[![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95_Buy_me_a_coffee-buymeacoffee.com%2Fbtmcode-f59e0b?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/btmcode)
 [![GitHub](https://img.shields.io/badge/%E2%AD%90_Star-github.com%2FBtmcode-181717?style=for-the-badge&logo=github)](https://github.com/Btmcode/GhostPilot)
 
 </div>
 
 GhostPilotは完全に無料でオープンソース。広告なし、テレメトリなし、有料版なし。
-お役に立ったら**[コーヒーをご馳走ください](https://buymeacoffee.com/devcloudpy)** ☕
+お役に立ったら**[コーヒーをご馳走ください](https://buymeacoffee.com/btmcode)** ☕
 
 > 💡 拡張機能は初回インストール時とその後週に最大1回、控えめな支援ウィンドウを表示します。**「今後表示しない」**を押せば二度と表示されません。
 

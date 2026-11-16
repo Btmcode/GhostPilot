@@ -1073,7 +1073,7 @@
       openUrl(a.dataset.url);
     });
   });
-  $("btnSupport").addEventListener("click", () => openUrl("https://buymeacoffee.com/devcloudpy"));
+  $("btnSupport").addEventListener("click", () => openUrl("https://buymeacoffee.com/btmcode"));
 
   $("btnMissionNew").addEventListener("click", () => {
     $("missionBoard").style.display = "none";

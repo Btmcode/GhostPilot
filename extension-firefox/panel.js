@@ -1048,6 +1048,24 @@
     await refreshMission();
   });
 
+  // Hızlı dil değiştirici (başlıkta) — etiket olarak hedef dili gösterir
+  const LANG_LABEL = { tr: "EN", en: "TR" };
+  function syncLangQuick() {
+    const cur = (window.GP_LANG && window.GP_LANG.lang) || "tr";
+    const b = $("btnLangQuick");
+    if (b) {
+      b.textContent = LANG_LABEL[cur];
+      b.title = cur === "tr" ? "Switch to English" : "Türkçe'ye geç";
+    }
+  }
+  $("btnLangQuick").addEventListener("click", async () => {
+    if (!window.GP_LANG) return;
+    await window.GP_LANG.setLang(window.GP_LANG.lang === "tr" ? "en" : "tr");
+    syncLangQuick();
+  });
+  document.addEventListener("gp-lang-changed", syncLangQuick);
+  syncLangQuick();
+
   // Hakkında: bağlantılar
   document.querySelectorAll("#aboutCard [data-url]").forEach((a) => {
     a.addEventListener("click", (e) => {
@@ -1055,7 +1073,7 @@
       openUrl(a.dataset.url);
     });
   });
-  $("btnSupport").addEventListener("click", () => openUrl("https://buymeacoffee.com/devcloudpy"));
+  $("btnSupport").addEventListener("click", () => openUrl("https://buymeacoffee.com/btmcode"));
 
   $("btnMissionNew").addEventListener("click", () => {
     $("missionBoard").style.display = "none";
