@@ -1,0 +1,31 @@
+GhostPilot — Eşzamanlı AI Fare/Klavye & Masaüstü Köprüsü
+GhostPilot — Simultaneous AI Mouse/Keyboard & Desktop Bridge
+Copyright (c) 2026 BTM Code
+
+────────────────────────────────────────────────────────────────────────
+GELİŞTİRİCİ / DEVELOPER
+────────────────────────────────────────────────────────────────────────
+  Developer : BTM Code
+  GitHub    : https://github.com/btmcode
+  Web       : https://btmcode.vercel.app
+  Blog      : https://mnemark.blogspot.com
+  Sponsor   : https://github.com/sponsors/btmcode
+  Support   : https://buymeacoffee.com/devcloudpy
+
+────────────────────────────────────────────────────────────────────────
+LİSANS / LICENSE
+────────────────────────────────────────────────────────────────────────
+  MIT — bkz. LICENSE / see LICENSE file
+  Sürüm / Version : 1.6.1
+
+Bu yazılım açık kaynaktır. Kopyalayabilir, değiştirebilir ve dağıtabilirsiniz;
+ancak bu telif bildirimini korumalısınız.
+This software is open source. You may copy, modify and redistribute it, but
+you must preserve this copyright notice.
+
+────────────────────────────────────────────────────────────────────────
+ÜÇÜNCÜ TARAF BİLEŞENLER / THIRD-PARTY COMPONENTS
+────────────────────────────────────────────────────────────────────────
+  Yoktur — harici kütüphane kullanılmaz.
+  Python standart kütüphanesi dışında paket gerekmez.
+  None — no external libraries. No packages outside the Python stdlib.

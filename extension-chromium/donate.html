@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!--
+  GhostPilot — donate.html
+  Copyright (c) 2026 BTM Code — MIT License
+  https://btmcode.vercel.app  ·  https://github.com/btmcode
+  Bağış / destek penceresi — ilk kurulumda ve haftada bir kez gösterilir.
+-->
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GhostPilot · Destek</title>
+  <link rel="stylesheet" href="donate.css" />
+</head>
+<body>
+  <div class="wrap">
+    <button id="btnClose" class="close" title="Kapat / Close" aria-label="Kapat">✕</button>
+
+    <header class="hero">
+      <div class="ghost">👻</div>
+      <h1 id="dTitle">GhostPilot'u beğendiniz mi?</h1>
+      <p id="dSub" class="sub">
+        Tamamen ücretsiz, açık kaynak ve reklamsız. Telemetri yok, ücretli katman yok.
+      </p>
+    </header>
+
+    <div class="card">
+      <div class="coffee">☕</div>
+      <h2 id="dAsk">Bir kahve ısmarlar mısınız?</h2>
+      <p id="dWhy" class="why">
+        Her kahve, yeni özellikler ve hata düzeltmeleri için motivasyon oluyor.
+      </p>
+      <button id="btnDonate" class="btn-donate">
+        <span id="dDonate">☕ Buy me a coffee</span>
+      </button>
+      <div class="price" id="dPrice">buymeacoffee.com/devcloudpy</div>
+    </div>
+
+    <div class="free">
+      <div class="free-title" id="dFreeTitle">Destek olmak istemiyor musunuz? Sorun değil — bunlar da değerli:</div>
+      <div class="free-row">
+        <button id="btnStar" class="chip">⭐ <span id="dStar">GitHub'da yıldız ver</span></button>
+        <button id="btnLater" class="chip">⏰ <span id="dLater">Sonra hatırlat</span></button>
+      </div>
+    </div>
+
+    <div class="mute-row">
+      <button id="btnMuteWeek" class="mute">🔕 <span id="dMuteWeek">Bir hafta gösterme</span></button>
+      <button id="btnMuteForever" class="mute danger">🚫 <span id="dMuteForever">Bir daha gösterme</span></button>
+    </div>
+
+    <footer class="foot">
+      <span id="dFoot">© 2026 BTM Code · MIT lisansı · hiçbir telemetri yok</span>
+    </footer>
+  </div>
+  <script src="i18n.js"></script>
+  <script src="donate.js"></script>
+</body>
+</html>

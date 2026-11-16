@@ -1,0 +1,34 @@
+==========================================================
+  GhostPilot v1.3 — HIZLI BAŞLANGIÇ
+==========================================================
+
+TEK REHBER: GHOSTPILOT_REHBER.html
+  (Kurulum · AI Bağla · API Anahtarı · Erişim Kontrolü · Sorun Giderme
+   — hepsi tek dosyada, sekmeli)
+
+----------------------------------------------------------
+1) ZIP'i bir klasöre çıkarın (örn. Belgeler/GhostPilot).
+
+2) Kurulumu başlatın:
+   Windows  -> kur.bat  (çift tıkla)
+   Linux    -> ./kur.sh
+   macOS    -> kurulum_baslat.command (çift tıkla)
+
+3) Chrome'a eklentiyi yükleyin:
+   chrome://extensions -> Geliştirici modu -> "Paketlenmemiş öğe yükle"
+   -> extension-chromium  klasörünü seçin
+
+4) 👻 simgesine tıklayıp paneli açın.
+   İlk ekran: "Hangi yapay zekâyı kullanacaksınız?"
+   -> Bir karta dokunun (Gemini / OpenRouter / Groq / Ollama / OpenAI)
+   -> "Tarayıcıda giriş yap ve bağlan"  VEYA  anahtarı yapıştırıp "Kaydet"
+   -> Anahtar KALICI olarak saklanır. Sonraki açılışlarda tekrar girmeniz
+      gerekmez; "Bağlı hesaplarım" listesinden geçiş yaparsınız.
+
+5) Görev sekmesi -> görevi yazın -> "▶ Görevi Başlat"
+
+6) Durdurma:  Alt+Shift+X (acil)  |  Alt+Shift+L (kilit/aç)
+              Panel sağ üst: ■  ve  🔓
+
+Komutlar: python kur.py [start|stop|status|autostart|native|token|reset]
+==========================================================

@@ -1,0 +1,171 @@
+/* ==========================================================================
+   GhostPilot — donate.css
+   Copyright (c) 2026 BTM Code — MIT License
+   https://btmcode.vercel.app
+   ========================================================================== */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 50% -10%, #1e293b 0%, #0b1220 42%, #070c15 100%);
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  text-align: center;
+  animation: rise .45s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.close {
+  position: absolute;
+  top: -6px; right: -2px;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  background: #0b1220;
+  color: #64748b;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+  z-index: 5;
+}
+.close:hover { color: #e2e8f0; border-color: #475569; background: #111c2e; }
+
+/* ---------- hero ---------- */
+.hero { margin-bottom: 20px; }
+.ghost {
+  font-size: 46px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 18px rgba(96, 165, 250, .35));
+  animation: float 3.6s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
+.hero h1 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 12px 0 6px;
+  letter-spacing: -.01em;
+  color: #f1f5f9;
+}
+.sub {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #94a3b8;
+  margin: 0 auto;
+  max-width: 340px;
+}
+
+/* ---------- kahve kartı ---------- */
+.card {
+  border: 1px solid #1e293b;
+  background: linear-gradient(180deg, rgba(30,41,59,.55), rgba(11,18,32,.9));
+  border-radius: 16px;
+  padding: 20px 18px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 16px 40px -18px rgba(0,0,0,.9), inset 0 1px 0 rgba(148,163,184,.07);
+}
+.coffee { font-size: 30px; line-height: 1; }
+.card h2 {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 9px 0 5px;
+  color: #fcd34d;
+}
+.why {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #94a3b8;
+  margin: 0 0 14px;
+}
+
+.btn-donate {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #fbbf24, #f59e0b);
+  color: #422006;
+  font: 800 13.5px/1 inherit;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .15s, filter .15s;
+  box-shadow: 0 8px 22px -8px rgba(245, 158, 11, .8);
+}
+.btn-donate:hover {
+  filter: brightness(1.07);
+  box-shadow: 0 10px 26px -6px rgba(245, 158, 11, .9);
+}
+.btn-donate:active { transform: scale(.985); }
+
+.price {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 9px;
+  letter-spacing: .02em;
+}
+
+/* ---------- ücretsiz alternatifler ---------- */
+.free { margin-bottom: 12px; }
+.free-title {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+.free-row { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; }
+.chip {
+  flex: 1 1 auto;
+  min-width: 140px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid #1e293b;
+  background: #0b1220;
+  color: #cbd5e1;
+  font: 600 11px/1 inherit;
+  cursor: pointer;
+  transition: all .15s;
+}
+.chip:hover { border-color: #3b82f6; background: rgba(59,130,246,.1); color: #93c5fd; }
+
+/* ---------- sustur ---------- */
+.mute-row {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.mute {
+  padding: 7px 11px;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  background: transparent;
+  color: #64748b;
+  font: 600 10px/1 inherit;
+  cursor: pointer;
+  transition: all .15s;
+}
+.mute:hover { color: #94a3b8; border-color: #334155; background: #0b1220; }
+.mute.danger:hover { color: #fca5a5; border-color: #7f1d1d; background: rgba(127,29,29,.18); }
+
+.foot {
+  font-size: 10px;
+  color: #475569;
+  line-height: 1.6;
+}

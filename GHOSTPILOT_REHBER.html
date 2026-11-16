@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GhostPilot — Tek Rehber</title>
+<style>
+  :root { --bg:#070b14; --card:#0d1524; --card2:#0a1120; --border:#1c2a40; --text:#e6edf7;
+          --muted:#8fa1ba; --accent:#3b82f6; --accent2:#60a5fa; --green:#34d399; --amber:#fbbf24; --red:#f87171; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:radial-gradient(1000px 520px at 50% -15%, #11304d 0%, var(--bg) 62%);
+    color:var(--text); font:16px/1.7 -apple-system,"Segoe UI",Roboto,Arial,sans-serif; padding:0 0 70px; }
+  header { text-align:center; padding:38px 20px 16px; }
+  h1 { margin:0 0 8px; font-size:29px; letter-spacing:-.4px; }
+  .sub { color:var(--muted); font-size:15.5px; max-width:660px; margin:0 auto; }
+  .wrap { max-width:880px; margin:0 auto; padding:0 18px; }
+  .tabs { display:flex; gap:6px; margin:22px 0 16px; flex-wrap:wrap; justify-content:center; }
+  .tabs button { font:700 13px/1 inherit; padding:11px 16px; border-radius:11px; cursor:pointer;
+    border:1px solid var(--border); background:var(--card2); color:var(--muted); transition:.15s; }
+  .tabs button.on { background:var(--accent); border-color:#2563eb; color:#fff; }
+  .pane { display:none; }
+  .pane.on { display:block; }
+  .step { background:var(--card); border:1px solid var(--border); border-radius:15px; padding:19px 21px; margin-bottom:13px; }
+  .head { display:flex; align-items:center; gap:13px; margin-bottom:11px; }
+  .num { flex:0 0 36px; height:36px; border-radius:11px; display:grid; place-items:center;
+    font:800 16px/1 inherit; background:rgba(59,130,246,.16); color:var(--accent2); border:1px solid rgba(59,130,246,.4); }
+  .step h2 { margin:0; font-size:18px; }
+  .step p { margin:8px 0; font-size:15.5px; color:#d3deec; }
+  ol,ul { margin:9px 0; padding-left:23px; font-size:15.5px; color:#d3deec; }
+  li { margin:8px 0; }
+  b { color:#fff; }
+  code { background:#050a12; border:1px solid #16233a; border-radius:6px; padding:3px 8px;
+    font:14px/1.4 ui-monospace,Consolas,monospace; color:#7dd3fc; word-break:break-all; }
+  .path { display:inline-block; background:#050a12; border:1px dashed #2b4468; border-radius:8px;
+    padding:5px 10px; font:14px/1.4 ui-monospace,Consolas,monospace; color:#a5f3fc; margin:3px 0; }
+  .kbd { display:inline-block; background:#141d2e; border:1px solid #2b3f5c; border-bottom-width:2px;
+    border-radius:6px; padding:2px 8px; font:600 13.5px/1.5 inherit; color:#fff; }
+  .note { border-left:4px solid var(--amber); background:rgba(251,191,36,.09); padding:11px 15px;
+    border-radius:0 9px 9px 0; margin:12px 0; font-size:14.5px; }
+  .note.ok { border-color:var(--green); background:rgba(52,211,153,.09); }
+  .note.err { border-color:var(--red); background:rgba(248,113,113,.09); }
+  .note.info { border-color:var(--accent); background:rgba(59,130,246,.09); }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; }
+  th,td { padding:9px 10px; border-bottom:1px solid #16233a; text-align:left; vertical-align:top; }
+  th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
+  tr.grow td { background:#0a1424; color:var(--accent2); font-weight:700; font-size:12.5px;
+    text-transform:uppercase; letter-spacing:.5px; }
+  .tag { display:inline-block; font:700 10.5px/1 inherit; padding:4px 8px; border-radius:20px; white-space:nowrap; }
+  .tag.free { color:#34d399; border:1px solid #34d399; background:rgba(52,211,153,.12); }
+  .tag.trial { color:#fbbf24; border:1px solid #fbbf24; background:rgba(251,191,36,.12); }
+  .tag.paid { color:#93a4bd; border:1px solid #40536e; background:rgba(147,164,189,.08); }
+  a.go { color:var(--accent2); text-decoration:none; font-weight:600; white-space:nowrap; }
+  a.go:hover { text-decoration:underline; }
+  .mock { background:#0a1120; border:1px solid #1b2b42; border-radius:11px; padding:13px 15px; font-size:14px; color:#c3d2e6; margin:12px 0; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:680px) { .two { grid-template-columns:1fr; } }
+  footer { text-align:center; color:var(--muted); font-size:13px; margin-top:30px; }
+  .big { background:linear-gradient(150deg,#0e2035,#0a1424); border:1px solid #1d4ed8; border-radius:15px; padding:19px 21px; margin:18px 0; }
+  .big h2 { margin:0 0 8px; font-size:18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>👻 GhostPilot — Tek Rehber</h1>
+  <p class="sub">Kurulum · yapay zekâ bağlama · API anahtarı · erişim kontrolü — hepsi tek sayfada</p>
+</header>
+
+<div class="wrap">
+  <div class="tabs" id="tabs">
+    <button class="on" data-p="p-kur">1 · Kurulum</button>
+    <button data-p="p-bagla">2 · AI Bağla</button>
+    <button data-p="p-key">3 · API Anahtarı</button>
+    <button data-p="p-kontrol">4 · Erişim Kontrolü</button>
+    <button data-p="p-hata">5 · Sorun Giderme</button>
+  </div>
+
+  <!-- ==================== 1. KURULUM ==================== -->
+  <div class="pane on" id="p-kur">
+    <div class="big">
+      <h2>Windows + Chrome — 4 adım</h2>
+      <p>Hiç kod yazmayacaksınız. Sadece çift tıklayacaksınız.</p>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">1</div><h2>ZIP'i çıkar</h2></div>
+      <p><code>GhostPilot_Paketi.zip</code> → sağ tık → <b>Tümünü ayıkla</b> → hedef <b>Belgeler</b>.</p>
+      <p class="path">C:\Users\KullanıcıAdınız\Belgeler\GhostPilot</p>
+      <div class="note err">ZIP'in <u>içinden</u> çalıştırmayın — mutlaka çıkarın.</div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">2</div><h2>Python kur (tek seferlik)</h2></div>
+      <p><code>python.org/downloads</code> → <b>Download Python</b> → kurulumda <b>“Add python.exe to PATH”</b> kutusunu işaretle → Install Now.</p>
+      <div class="note">Bu kutu işaretlenmezse <code>kur.bat</code> çalışmaz. En sık yapılan hata.</div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">3</div><h2>kur.bat'a çift tıkla</h2></div>
+      <p>Pencere açılır ve şunu yazar:</p>
+      <div class="mock"><span style="color:#34d399">✓ Tüm dosyalar yerinde.<br>✓ Köprü çalışıyor: http://127.0.0.1:17380</span></div>
+      <p>Masaüstü kontrolü istemiyorsanız bu adımı atlayabilirsiniz.</p>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">4</div><h2>Chrome'a yükle</h2></div>
+      <ol>
+        <li>Adres çubuğu: <code>chrome://extensions</code></li>
+        <li>Sağ üst: <b>Geliştirici modu</b> → aç</li>
+        <li>Sol üst: <b>Paketlenmemiş öğe yükle</b></li>
+        <li>Şu klasörü seç:</li>
+      </ol>
+      <p class="path">...\Belgeler\GhostPilot\extension-chromium</p>
+      <ol start="5">
+        <li>🧩 puzzle simgesi → GhostPilot yanındaki <b>📌</b> çiviyi tıkla</li>
+        <li>👻 simgesine tıkla → panel açılır</li>
+      </ol>
+      <div class="note err"><code>extension-chromium</code> klasörünün <b>kendisini</b> seçin — ana klasörü değil.</div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. AI BAĞLA ==================== -->
+  <div class="pane" id="p-bagla">
+    <div class="big">
+      <h2>Panelin yeni ilk ekranı: tek dokunuşla bağlan</h2>
+      <p>Açılışta <b>“Hangi yapay zekâyı kullanacaksınız?”</b> ekranı gelir. Karta dokunun — gerisini panel halleder.</p>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">1</div><h2>Karta dokun</h2></div>
+      <div class="mock">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="border:1px solid #2f9e6e;background:rgba(52,211,153,.1);border-radius:10px;padding:10px">
+            <b>✦ Google Gemini</b><br><span style="font-size:11.5px;color:#8fa1ba">Ücretsiz · kart istemez</span><br>
+            <span class="tag free" style="margin-top:6px;display:inline-block">ÜCRETSİZ</span>
+          </div>
+          <div style="border:1px solid #24374f;border-radius:10px;padding:10px">
+            <b>⇄ OpenRouter</b><br><span style="font-size:11.5px;color:#8fa1ba">Tek anahtar, 30+ model</span><br>
+            <span class="tag free" style="margin-top:6px;display:inline-block">ÜCRETSİZ</span>
+          </div>
+          <div style="border:1px solid #24374f;border-radius:10px;padding:10px">
+            <b>🦙 Ollama (yerel)</b><br><span style="font-size:11.5px;color:#8fa1ba">Anahtar yok · veri dışarı çıkmaz</span>
+          </div>
+          <div style="border:1px solid #24374f;border-radius:10px;padding:10px">
+            <b>◍ OpenAI</b><br><span style="font-size:11.5px;color:#8fa1ba">GPT · kredi gerekir</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">2</div><h2>Bağlan — 3 farklı yol</h2></div>
+      <div class="two">
+        <div class="mock">
+          <b>🔐 Otomatik (Gemini · OpenRouter)</b>
+          <p style="font-size:14px">Mor <b>“Tarayıcıda giriş yap ve bağlan”</b> düğmesine bas → hesabınla gir → izin ver → <b>anahtar kendiliğinden kaydedilir</b>.</p>
+          <p style="font-size:13px;color:#8fa1ba">OpenRouter kalıcı anahtar verir. Gemini ~1 saatlik jeton verir; süre bitince aynı düğmeye tekrar bas.</p>
+        </div>
+        <div class="mock">
+          <b>⌨️ Elle anahtar</b>
+          <p style="font-size:14px">Anahtarı kutuya yapıştır → <b>💾 Kaydet</b>. Anahtar <b>kalıcı</b> olarak saklanır, bir daha girmen gerekmez.</p>
+          <p style="font-size:13px;color:#8fa1ba">Her sağlayıcı için ayrı ayrı saklanır. İstediğin an “Bağlı hesaplarım” listesinden geçiş yap.</p>
+        </div>
+      </div>
+      <div class="mock" style="margin-top:12px">
+        <b>🦙 Anahtarsız (Ollama)</b>
+        <p style="font-size:14px;margin:6px 0 0">Kartta Ollama'yı seç, uygulama açık olsun, <b>Test Et</b>e bas. Anahtar kutusu hiç görünmez.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">3</div><h2>Kayıtlı hesaplar</h2></div>
+      <p>İkinci kartta bağladığın <b>tüm</b> hesaplar listelenir: sağlayıcı adı, maskeli anahtar (<code>sk-pro…5678</code>), model ve tarih.</p>
+      <ul>
+        <li><b>Kullan</b> → o sağlayıcıya anında geç</li>
+        <li>Yeşil <b>AKTİF</b> etiketi → şu an hangisi kullanılıyor</li>
+        <li>Süresi dolmuş jetonlar <b>“süresi doldu”</b> olarak işaretlenir</li>
+      </ul>
+      <div class="note ok">Kaç sağlayıcı eklerseniz ekleyin, her biri ayrı saklanır — biri diğerini ezmez.</div>
+    </div>
+  </div>
+
+  <!-- ==================== 3. API ANAHTARI ==================== -->
+  <div class="pane" id="p-key">
+    <div class="big">
+      <h2>Ücretsiz başlamanın 3 yolu</h2>
+      <p><b>1)</b> Ollama — anahtar yok, kayıt yok · <b>2)</b> Gemini / OpenRouter / Groq — ücretsiz anahtar, kart istemez · <b>3)</b> Kredi yüklü API'ler</p>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">🦙</div><h2>Anahtarsız: Ollama</h2></div>
+      <ol>
+        <li><code>ollama.com/download</code> → Download for Windows → kur</li>
+        <li>Komut isteminde: <code>ollama pull qwen2.5:7b</code> (zayıf PC: <code>qwen2.5:3b</code>)</li>
+        <li>Panelde <b>Ollama</b> kartı → <b>Test Et</b>. Bitti.</li>
+      </ol>
+      <div class="note ok">Veri bilgisayarından çıkmaz, süresiz ücretsiz. 8 GB RAM'de 3B, 16 GB'de 7B model rahat çalışır.</div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">✦</div><h2>Ücretsiz anahtar: Gemini (2 dakika)</h2></div>
+      <ol>
+        <li><code>aistudio.google.com/apikey</code></li>
+        <li>Google hesabıyla giriş</li>
+        <li><b>Create API key</b> → proje seç → <code>AIza...</code> anahtarı kopyala</li>
+        <li>Panelde Gemini kartı → anahtarı yapıştır → <b>💾 Kaydet</b> → <b>Test Et</b></li>
+      </ol>
+      <div class="note info">Ücretsiz kota: ~dakikada 10, günde ~250 istek. Kart gerekmez.</div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">⇄</div><h2>Ücretsiz anahtar: OpenRouter (30+ model)</h2></div>
+      <ol>
+        <li><code>openrouter.ai</code> → Sign in (Google ile)</li>
+        <li>Profil → <b>Keys</b> → <b>Create Key</b> → <code>sk-or-v1-...</code></li>
+        <li>Panelde OpenRouter kartı → yapıştır → Kaydet</li>
+        <li>Ücretsiz model için model adının sonuna <code>:free</code> ekle, örn:
+          <code>deepseek/deepseek-chat-v3-0324:free</code></li>
+      </ol>
+      <div class="note info">Ücretsiz: günde 50 istek. $10 kredi yüklersen 1000'e çıkar.</div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">💳</div><h2>Ücretli: OpenAI / Claude</h2></div>
+      <div class="two">
+        <div class="mock">
+          <b>OpenAI</b>
+          <ol style="font-size:14px;padding-left:20px">
+            <li><code>platform.openai.com</code> → Sign up</li>
+            <li>Settings → <b>Billing</b> → kredi ekle (min $5)</li>
+            <li>API keys → Create secret key</li>
+          </ol>
+        </div>
+        <div class="mock">
+          <b>Anthropic Claude</b>
+          <ol style="font-size:14px;padding-left:20px">
+            <li><code>console.anthropic.com</code> → Sign up</li>
+            <li>Plans &amp; Billing → kredi (min $5)</li>
+            <li>API Keys → Create Key</li>
+          </ol>
+        </div>
+      </div>
+      <div class="note err"><b>ChatGPT Plus / Claude Pro aboneliği API anahtarı vermez.</b> API ayrı faturalandırılır.</div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">📋</div><h2>Tüm sağlayıcılar — anahtar sayfaları</h2></div>
+      <p>Panelde sağlayıcıyı seçtikten sonra <b>“🔑 Anahtarı nereden alacağım?”</b> bağlantısı da aynı sayfayı açar.</p>
+      <table>
+        <tr><th>Sağlayıcı</th><th>Durum</th><th>Anahtar</th></tr>
+<tr class="grow"><td colspan="3">☁️ Bulut</td></tr>
+<tr><td><b>OpenAI</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Anthropic Claude</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Google Gemini</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Gemini (OpenAI uyumlu)</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>OpenRouter</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://openrouter.ai/keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Groq</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://console.groq.com/keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>DeepSeek</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Together AI</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://api.together.xyz/settings/api-keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Mistral AI</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Cohere</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://dashboard.cohere.com/api-keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Azure OpenAI</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://portal.azure.com/#create/Microsoft.CognitiveServicesOpenAI" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>xAI Grok</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://console.x.ai" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Perplexity</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://www.perplexity.ai/settings/api" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Fireworks AI</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://fireworks.ai/api-keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Anyscale</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://app.endpoints.anyscale.com/credentials" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr class="grow"><td colspan="3">🇨🇳 Çin</td></tr>
+<tr><td><b>Qwen (Alibaba)</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://bailian.console.alibabacloud.com/" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Qwen (Uluslararası)</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://modelstudio.console.alibabacloud.com/" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Moonshot Kimi</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://platform.moonshot.cn/console/api-keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Moonshot Kimi (Global)</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://platform.moonshot.ai/console/api-keys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Zhipu GLM</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Z.ai GLM</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://z.ai/manage-apikey/apikey-list" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Doubao (ByteDance)</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://console.volcengine.com/ark" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Tencent Hunyuan</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://console.cloud.tencent.com/hunyuan/api-key" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>MiniMax</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://platform.minimaxi.com/user-center/basic-information/interface-key" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>MiniMax (Global)</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://platform.minimax.io/user-center/basic-information/interface-key" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Baidu ERNIE</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://console.bce.baidu.com/iam/#/iam/apikey/list" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>SiliconFlow</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://cloud.siliconflow.cn/account/ak" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>SiliconFlow (Global)</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://cloud.siliconflow.com/account/ak" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>ModelScope</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://www.modelscope.cn/my/myaccesstoken" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>01.AI Yi</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://platform.lingyiwanwu.com/apikeys" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Baichuan</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://platform.baichuan-ai.com/console/apikey" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>StepFun</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://platform.stepfun.com/interface-key" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr class="grow"><td colspan="3">🇯🇵 Japonya</td></tr>
+<tr><td><b>Sakana Namazu 🇯🇵</b></td><td><span class="tag paid">Kredi</span></td><td><a class="go" href="https://console.sakana.ai" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>PLaMo (PFN) 🇯🇵</b></td><td><span class="tag trial">Ücretsiz kota</span></td><td><a class="go" href="https://console.platform.preferredai.jp/" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>Sarashina3 🇯🇵</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://sarashina.ai" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr class="grow"><td colspan="3">💻 Yerel (anahtarsız)</td></tr>
+<tr><td><b>Ollama (yerel)</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://ollama.com/download" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>LM Studio (yerel)</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://lmstudio.ai" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+<tr><td><b>llama.cpp (yerel)</b></td><td><span class="tag free">ÜCRETSİZ</span></td><td><a class="go" href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">Anahtar al ↗</a></td></tr>
+      </table>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">🔒</div><h2>Anahtar güvenliği</h2></div>
+      <ul>
+        <li>Anahtar yalnızca <b>tarayıcının kendi deposunda</b> (<code>chrome.storage.local</code>) tutulur — hiçbir sunucuya gitmez, sadece seçtiğin sağlayıcıya gider.</li>
+        <li>Otomatik akış <b>PKCE (S256)</b> kullanır — istemci sırrı gerekmez, aracı sunucu yok.</li>
+        <li>Anahtarı kimseyle paylaşma; sızarsa sağlayıcı panelinden <b>Revoke</b> de.</li>
+        <li>Her sağlayıcıya harcama limiti koy (çoğunda Settings → Limits var).</li>
+        <li>Şüphelenirsen <b>🔒 Kilitle</b> ile AI erişimini tamamen kes — anahtar dursa bile işlem yapılamaz.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ==================== 4. ERİŞİM ==================== -->
+  <div class="pane" id="p-kontrol">
+    <div class="big">
+      <h2>Yapay zekâ ne yapabilir? İstediğin an kes.</h2>
+      <p>Dört ayrı kesme yöntemi var; hepsi basılı kalan tuşları da serbest bırakır.</p>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">⌨</div><h2>Kısayollar</h2></div>
+      <table>
+        <tr><th>Kısayol</th><th>Sonuç</th></tr>
+        <tr><td><span class="kbd">Alt</span>+<span class="kbd">Shift</span>+<span class="kbd">X</span></td><td><b>Acil durdurma</b> — görev + tüm sanal tuşlar anında kesilir</td></tr>
+        <tr><td><span class="kbd">Alt</span>+<span class="kbd">Shift</span>+<span class="kbd">L</span></td><td>Erişimi kilitle / aç</td></tr>
+        <tr><td>Panel üst sağdaki <b>🔓</b></td><td>Tek tıkla kilitle/aç</td></tr>
+        <tr><td>Panel üst sağdaki <b>■</b></td><td>Acil durdurma</td></tr>
+      </table>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">👁</div><h2>Üç erişim seviyesi</h2></div>
+      <table>
+        <tr><th>Seviye</th><th>AI ne yapabilir?</th></tr>
+        <tr><td>🔓 <b>Tam</b></td><td>Okur + tıklar + yazar + tuş basar (tarayıcı & masaüstü)</td></tr>
+        <tr><td>👁️ <b>Okuma</b></td><td>Ekranı/DOM'u okur, <b>hiçbir girdi gönderemez</b></td></tr>
+        <tr><td>🔒 <b>Kilitli</b></td><td>Hiçbir şey — ajan, MCP, daemon, web köprüsü dahil her yol kapalı</td></tr>
+      </table>
+      <p style="margin-top:10px"><b>Ayarlar sekmesinde:</b></p>
+      <ul>
+        <li><b>Süre</b> → 15 dk / 30 dk / 1 sa / 4 sa / 8 sa; süre bitince otomatik kilit</li>
+        <li><b>Sadece bu sekme</b> → diğer sekmelerde AI hiçbir şey yapamaz</li>
+        <li><b>Her görevden önce onay iste</b> → onay penceresi olmadan görev başlamaz</li>
+        <li><b>Son erişim kayıtları</b> → son 60 karar (izin/ret + gerekçe)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ==================== 5. SORUN GİDERME ==================== -->
+  <div class="pane" id="p-hata">
+    <div class="big">
+      <h2>Sık karşılaşılan sorunlar</h2>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">💳</div><h2>“429 — You have no credits remaining”</h2></div>
+      <p>Anahtarın <b>doğru</b>; sadece hesabında <b>bakiye yok</b>. Bu limit aşımı değildir.</p>
+      <div class="two">
+        <div class="mock"><b>① Kredi yükle</b><p style="font-size:14px"><code>platform.openai.com</code> → Settings → Billing → min $5. Aktifleşmesi 5–10 dk sürebilir.</p></div>
+        <div class="mock"><b>② Ücretsiz sürdür</b><p style="font-size:14px">Hata mesajının altında çıkan <b>🎁 Ücretsiz Gemini'ye geç</b> veya <b>🦙 Ollama</b> düğmesine bas — sağlayıcı otomatik değişir.</p></div>
+      </div>
+      <div class="note err">ChatGPT Plus aboneliği API kredisi <b>vermez</b>.</div>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">?</div><h2>Diğer hatalar</h2></div>
+      <table>
+        <tr><th>Belirti</th><th>Çözüm</th></tr>
+        <tr><td><b>401</b> Unauthorized</td><td>Anahtar eksik/yanlış kopyalanmış. Başındaki-sonundaki boşluğa dikkat.</td></tr>
+        <tr><td><b>402 / insufficient_quota</b></td><td>Kredi yok → Billing'den ekle.</td></tr>
+        <tr><td><b>404</b> model not found</td><td>Model adı yanlış → <b>📋</b> düğmesiyle listeden seç.</td></tr>
+        <tr><td><b>429</b> rate limit</td><td>Ücretsiz kota doldu. Bekle veya başka sağlayıcıya geç.</td></tr>
+        <tr><td>Yerel sunucuya ulaşılamadı</td><td>Ollama kapalı → <code>ollama serve</code> veya uygulamayı aç.</td></tr>
+        <tr><td>“Erişim engellendi”</td><td>Kilit açık → <span class="kbd">Alt</span>+<span class="kbd">Shift</span>+<span class="kbd">L</span></td></tr>
+        <tr><td>kur.bat açılıp kapanıyor</td><td>Python kurulu değil veya PATH'e eklenmemiş.</td></tr>
+        <tr><td>“Manifest okunamadı”</td><td>Yanlış klasör → <code>extension-chromium</code> seç.</td></tr>
+        <tr><td><b>xKiro'nun 26 ücretsiz modeli hangileri?</b></td><td>Panelde <b>📋 Modeller</b>'e basınca bu liste canlı olarak gelir (xKiro'nun <code>/v1/models</code> uç noktası anahtarsız açıktır). Tam liste:<ol style="margin:6px 0 0;padding-left:20px;font-size:11px;line-height:1.7"><li><code>cohere/command-a-plus</code> ⭐</li><li><code>cohere/command-a-reasoning</code></li><li><code>cohere/command-a</code></li><li><code>sensenova/sensenova-6.8-flash-lite</code></li><li><code>mistralai/ministral-14b</code></li><li><code>cohere/north-mini-code</code></li><li><code>mistralai/mistral-large-2512</code></li><li><code>mistralai/mistral-medium-3.5</code> ⭐</li><li><code>mistralai/mistral-small-2603</code> ⭐</li><li><code>mistralai/devstral-medium</code></li><li><code>mistralai/codestral-2508</code></li><li><code>mistralai/ministral-8b</code></li><li><code>stealth/big-pickle</code></li><li><code>cohere/command-r7b-12-2024</code></li><li><code>cohere/command-r-08-2024</code></li><li><code>mistralai/ministral-3b</code></li><li><code>cohere/command-r-plus-08-2024</code></li><li><code>cohere/command-a-translate</code></li><li><code>cohere/tiny-aya-earth</code></li><li><code>cohere/tiny-aya-global</code></li><li><code>cohere/tiny-aya-fire</code></li><li><code>cohere/tiny-aya-water</code></li><li><code>cohere/aya-expanse-32b</code></li><li><code>cohere/command-a-vision</code></li><li><code>cohere/north-small-translate</code></li><li><code>cohere/aya-vision-32b</code></li></ol>⭐ = ajan görevleri için en uygun (256k+ bağlam, görsel + araç desteği).<br>⚠️ 32k altı bağlamlı modeller (Tiny Aya, Aya Vision, North Small Translate) uzun sayfalarda zorlanır — panel bunları "⚠️ kısa bağlam" diye işaretler.</td></tr>
+<tr><td><b>Misyon nedir? (kalıcı hedef)</b></td><td>Tek seferlik görev yerine <b>büyük hedef</b> verirsiniz; ajan <b>kendi görev listesini</b> kurar ve durmadan yürütür.<br><b>Örnek:</b> <i>"site-adresim.com'a git, hesabıma bağlan, blog seç, tema düzenle, reklam geliri üretecek şekilde yapılandır. Hedef: ayda 100$ gelir."</i><br><b>Nasıl:</b> Görev sekmesi → <b>🎯 Misyon</b> → hedefi yaz → <b>🚀 Misyonu başlat</b>.</td></tr>
+<tr><td><b>Misyon nasıl çalışır?</b></td><td>1) <b>Plancı</b> hedefi 4-10 somut adıma böler (her adımın sayfada kontrol edilebilir bir ölçütü olur).<br>2) <b>Yürütücü</b> her adımı ajan olarak çalıştırır (ayrı pencere, hafıza, sağlayıcı devralma).<br>3) <b>Doğrulayıcı</b> sayfaya bakıp adımın gerçekten tamamlandığını kontrol eder; tamamlanmadıysa 3 kez tekrar dener.<br>4) <b>Döngü</b> alarmla sürer — tarayıcı kapansa bile panel açılınca devam eder.</td></tr>
+<tr><td><b>Misyonu duraklat / adım atla</b></td><td>Panel → Misyon panosu → <b>⏸ Duraklat</b> (kaldığı adım kaydedilir) · <b>▶ Sürdür</b> · her adımın yanında <b>atla</b> · <b>🗑</b> misyonu siler.</td></tr>
+<tr><td><b>Ajan tekrar tekrar sekme açıyor</b></td><td>Yeni sürümde koruma var: aynı adrese <b>ikinci kez gitme isteği engellenir</b>, adres ajanın hafızasına yazılır ve tekrar denenmez. Ayrıca görev <b>kendi penceresinde</b> çalışır.</td></tr>
+<tr><td><b>Ajan mevcut sekmelerimde çalışıyor</b></td><td>Görev sekmesinde <b>🗔 Yeni pencere</b> seçili olsun (varsayılan). Böylece ayrı pencere açılır, sizin sekmeleriniz karışmaz. <b>📑 Mevcut sekme</b> seçilirse açık sekmeyi kullanır.</td></tr>
+<tr><td><b>Token/kota bitti, görev yarıda kaldı</b></td><td>Otomatik devralma çalışır: sıradaki hazır sağlayıcıya geçip <b>kaldığı adımdan devam eder</b>. Sıra: xKiro → Gemini → Groq → OpenRouter → ModelScope → Ollama/LM Studio. Paneldeki <b>🧠 Görev hafızası</b> kartında <b>▶ Kaldığı yerden devam et</b> düğmesi vardır.</td></tr>
+<tr><td><b>Ajan görevi hatırlıyor mu?</b></td><td>Evet. Her adım diske yazılır: hedef, adım numarası, yapılan işlemler, öğrenilen URL/sayfa notları, tükenen sağlayıcılar. Tarayıcı kapansa, bilgisayar yeniden başlasa bile panel açılınca görev kartı görünür ve devam ettirilebilir.</td></tr>
+<tr><td><b>xKiro nedir, nasıl bağlanır?</b></td><td><a href="https://xkiro.com">xKiro</a> tek anahtarla <b>69 modele</b> erişim veren bir ağ geçididir (OpenAI ve Claude biçimini destekler). <b>26 modeli tamamen ücretsiz</b> — kart istemez, günde 500K token.<br><b>Kurulum:</b> panelde <b>xKiro</b> kartına dokunun → <b>🔑 Anahtarı nereden alacağım?</b> → xkiro.com'da kayıt olun (ücretsiz) → anahtarı kopyalayıp yapıştırın → <b>💾 Kaydet</b>.<br><b>Model seçimi:</b> <b>📋 Modeller</b> düğmesine basın; ücretsiz / plan dahili / kredi ile olarak gruplanmış 69 model listelenir. Ücretsiz öneriler: <code>mistralai/mistral-medium-3.5</code>, <code>cohere/command-a-plus</code>, <code>sensenova/sensenova-6.8-flash-lite</code>.<br>Model adları <b>her zaman sağlayıcı ön ekli</b> olmalı (<code>openai/...</code>, <code>mistralai/...</code>).</td></tr>
+<tr><td><b>Ollama / yerel model kullanmak istiyorum</b></td><td>Panel açılınca GhostPilot <code>127.0.0.1:11434</code> adresini <b>kendiliğinden tarar</b>. Ollama kuruluysa üstte yeşil bant çıkar: <b>“🦙 Ollama bulundu — N model”</b>. <b>Bağlan</b>'a basın; en uygun model seçilir ve kalıcı kaydedilir. Anahtar gerekmez, veri bilgisayarınızdan çıkmaz.<br>Model yüklü değilse: <code>ollama pull qwen2.5:7b</code></td></tr>
+<tr><td><b>Kayıtlı anahtarı silmek istiyorum</b></td><td>Panel → Yapay Zekâ → <b>2. Bağlı hesaplarınız</b>. Her satırın sağındaki <b>🗑</b> düğmesine basın, <b>“Silinsin mi?”</b> yazısına tekrar basın — o anahtar kalıcı olarak silinir, diğerleri etkilenmez. Tümünü silmek için listenin üstündeki <b>🗑 Hepsini sil</b>.</td></tr>
+<tr><td><b>“Cannot access a chrome-extension:// URL of different extension”</b><br>veya “Hedef sekme otomasyona kapalı”</td><td>Görev, <b>yeni sekme sayfası</b> ya da başka bir eklentinin sayfasında başlatılmış. Chrome bunlara izin vermez.<br><b>Çözüm:</b> Blogger/Google gibi normal bir siteyi açın, <b>o sekmede</b> kalın ve görevi başlatın. 1.3.3 sürümü artık bunu kendisi fark eder, uygun sekmeye geçer veya yeni sekmede açar (<code>navigate</code> + <code>newTab</code>). Panelde <b>🌐 blogger.com sekmesi aç</b> düğmesi de çıkar.</td></tr>
+        <tr><td>“This model models/… is no longer available” / <b>Hata 404 — model bulunamadı</b></td><td>Google model adlarını zamanla değiştirir. GhostPilot 1.3.2 artık <b>modeli kendisi bulur</b>: panelde <b>🔌 Bağlantıyı Test Et</b>'e basın, doğru model otomatik seçilip kalıcı kaydedilir. İsterseniz <b>📋 Modeller</b> ile listeyi görün. Not: en yeni ücretsiz modeller <code>gemini-3.8-flash</code> (günlük 20 istek) ve <code>gemini-3.5-flash-lite</code> (günlük 500 istek, daha çok).</td></tr>
+        <tr><td>“Otomatik yetkilendirme bu tarayıcıda desteklenmiyor”</td><td>Eski sürüm yüklü. <code>chrome://extensions</code> → GhostPilot → <b>Kaldır</b> → <b>Paketlenmemiş öğe yükle</b> → <code>extension-chromium</code>. Yeni sürümde <code>identity</code> izni var. Panelde bu hatada zaten adım adım kutu çıkar.</td></tr>
+        <tr><td>Chrome eklentiyi kapatıyor</td><td><code>chrome://extensions</code> → Geliştirici modu açık kalsın.</td></tr>
+        <tr><td>Chrome'da 👻 simgesi yok</td><td>🧩 puzzle → GhostPilot yanındaki 📌 çiviyi tıkla.</td></tr>
+        <tr><td>Masaüstü “bekleniyor”</td><td>Görev sekmesi → <b>Yeniden bağlan</b>. Olmazsa <code>kur.bat</code> tekrar.</td></tr>
+        <tr><td>Linux'ta pencere yok</td><td><code>sudo apt install xdotool</code>, X11 oturumu kullan.</td></tr>
+        <tr><td>macOS'ta tıklama gitmiyor</td><td>Sistem Ayarları → Gizlilik → <b>Erişilebilirlik</b> izni ver.</td></tr>
+      </table>
+    </div>
+
+    <div class="step">
+      <div class="head"><div class="num">✓</div><h2>Doğrulama listesi</h2></div>
+      <table>
+        <tr><th>Kontrol</th><th>Beklenen</th></tr>
+        <tr><td>Panelde sağlayıcı adı görünüyor mu?</td><td>Sağ üstte rozet dolu</td></tr>
+        <tr><td>Bağlantıyı Test Et</td><td>✓ sağlayıcı · model · ms</td></tr>
+        <tr><td>Bağlı hesaplarım kartı</td><td>Anahtar maskeli görünür</td></tr>
+        <tr><td>Sanal imleç testi</td><td>Farenizden bağımsız hareket</td></tr>
+        <tr><td>Alt+Shift+X</td><td>Görev durur</td></tr>
+        <tr><td>Kilitle → görev başlat</td><td>“Erişim engellendi”</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <footer>GhostPilot v1.3 · Tek rehber · Windows / Linux / macOS · Chromium + Firefox</footer>
+</div>
+
+<script>
+  document.getElementById('tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('on', p.id === b.dataset.p));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+
+  <footer style="margin:34px auto 0;max-width:900px;padding:22px 18px;border-top:1px solid #1e293b;text-align:center;font-size:12px;color:#64748b;line-height:1.9">
+    <div style="font-size:15px;font-weight:800;color:#e2e8f0;margin-bottom:4px">GhostPilot 👻 <span style="font-size:11px;color:#475569;font-weight:600">v1.6.1</span></div>
+    <div>© 2026 <b style="color:#94a3b8">BTM Code</b> — MIT lisansı altında açık kaynak / open source under the MIT license</div>
+
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:16px auto 0;max-width:720px">
+      <a href="https://github.com/btmcode" style="display:flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid #1e293b;border-radius:9px;background:#0b1220;color:#cbd5e1;text-decoration:none;font-size:11px;font-weight:700">
+        <svg viewBox="0 0 16 16" width="15" height="15" fill="#94a3b8"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
+      <a href="https://btmcode.vercel.app" style="display:flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid #1e293b;border-radius:9px;background:#0b1220;color:#cbd5e1;text-decoration:none;font-size:11px;font-weight:700">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5a15 15 0 0 1 0 19 15 15 0 0 1 0-19Z"/></svg>
+        Web
+      </a>
+      <a href="https://mnemark.blogspot.com" style="display:flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid #1e293b;border-radius:9px;background:#0b1220;color:#cbd5e1;text-decoration:none;font-size:11px;font-weight:700">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H15l5 5v10.5A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+        Blog
+      </a>
+      <a href="https://buymeacoffee.com/devcloudpy" style="display:flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid #f59e0b;border-radius:9px;background:rgba(245,158,11,.12);color:#fcd34d;text-decoration:none;font-size:11px;font-weight:700">
+        ☕ Buy me a coffee
+      </a>
+    </div>
+
+    <div style="margin-top:14px;font-size:11px;color:#475569;max-width:660px;margin-left:auto;margin-right:auto">
+      <b style="color:#64748b">Gizlilik / Privacy:</b> telemetri yok · API anahtarlarınız yalnızca bu tarayıcıda saklanır ·
+      şifre, kart ve OTP alanları hiçbir zaman okunmaz · masaüstü köprüsü yalnızca 127.0.0.1 üzerinde, rastgele token ile çalışır.
+      Ayrıntı / details: SECURITY.md
+    </div>
+    <div style="margin-top:10px;font-size:10.5px;color:#334155">
+      Telif bildirimini koruduğunuz sürece kopyalayabilir, değiştirebilir ve dağıtabilirsiniz.<br>
+      You may copy, modify and redistribute as long as you preserve this copyright notice.
+    </div>
+  </footer>
+</div>
+
+<script>
+  document.getElementById('tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('on', p.id === b.dataset.p));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+
+  <footer style="margin:34px auto 0;max-width:900px;padding:20px 18px;border-top:1px solid #1e293b;text-align:center;font-size:12px;color:#64748b;line-height:1.9">
+    <div style="font-size:15px;font-weight:800;color:#e2e8f0;margin-bottom:6px">GhostPilot 👻 <span style="font-size:11px;color:#475569;font-weight:600">v1.6.1</span></div>
+    <div>© 2026 <b style="color:#94a3b8">BTM Code</b> — MIT lisansı altında açık kaynak</div>
+    <div style="margin-top:8px">
+      <a href="https://btmcode.vercel.app" style="color:#60a5fa;text-decoration:none">btmcode.vercel.app</a>
+      &nbsp;·&nbsp;
+      <a href="https://mnemark.blogspot.com" style="color:#60a5fa;text-decoration:none">mnemark.blogspot.com</a>
+      &nbsp;·&nbsp;
+      <a href="https://buymeacoffee.com/devcloudpy" style="color:#fcd34d;text-decoration:none">☕ Destek ol</a>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:#475569;max-width:640px;margin-left:auto;margin-right:auto">
+      <b style="color:#64748b">Gizlilik:</b> telemetri yok · API anahtarlarınız yalnızca bu tarayıcıda saklanır ·
+      şifre, kart ve OTP alanları hiçbir zaman okunmaz · masaüstü köprüsü yalnızca 127.0.0.1 üzerinde,
+      rastgele token ile çalışır. Ayrıntı: SECURITY.md
+    </div>
+    <div style="margin-top:10px;font-size:10.5px;color:#334155">Telif bildirimini koruduğunuz sürece kopyalayabilir, değiştirebilir ve dağıtabilirsiniz.</div>
+  </footer>
+</body>
+</html>

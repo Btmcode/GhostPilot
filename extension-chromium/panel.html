@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<!--
+  GhostPilot — panel.html
+  Copyright (c) 2026 BTM Code — MIT License
+  https://btmcode.vercel.app  ·  https://mnemark.blogspot.com
+  Açık kaynak. Telif bildirimini koruyun.
+-->
+
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GhostPilot</title>
+<link rel="stylesheet" href="panel.css" />
+</head>
+<body>
+
+<!-- ================= ÜST BAR ================= -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">👻</span>
+    <span class="brandname">GhostPilot</span>
+    <span class="modelpill" id="activeModelPill" title="Aktif yapay zekâ">—</span>
+  </div>
+  <div class="topbar-actions">
+    <button id="btnLockQuick" class="icon-btn" title="AI erişimini kilitle/aç (Alt+Shift+L)">🔓</button>
+    <button id="btnLangQuick" class="icon-btn lang-quick" title="Dil değiştir / Switch language">🌐</button>
+    <button id="btnPanic" class="icon-btn danger" title="Acil durdurma (Alt+Shift+X)">■</button>
+  </div>
+</header>
+
+<!-- ================= DURUM ŞERİDİ ================= -->
+<div class="statusline">
+  <span class="dot off" id="dotDaemon"></span>
+  <span id="txtDaemon">Masaüstü: bekleniyor</span>
+  <span class="sepdot">·</span>
+  <span id="txtEngine">Girdi: hazır</span>
+  <span class="sepdot">·</span>
+  <span id="txtAccess">AI erişimi: açık</span>
+</div>
+
+<!-- ================= SEKMELER ================= -->
+<nav class="tabs tabs-3">
+  <button class="tab active" data-tab="ai">🤖 Yapay Zekâ</button>
+  <button class="tab" data-tab="work">▶ Görev</button>
+  <button class="tab" data-tab="settings">⚙ Ayarlar</button>
+</nav>
+
+<main class="tab-panel active" id="tab-ai">
+
+  <!-- ---------- İLK EKRAN: SAĞLAYICI SEÇ ---------- -->
+  <div class="card">
+    <div class="card-title">
+      <h2>1. Hangi yapay zekâyı kullanacaksınız?</h2>
+      <p class="hint">Karta dokunun → giriş penceresi açılır → anahtar otomatik kaydedilir.</p>
+    </div>
+
+    <div class="provider-cards" id="providerCards">
+      <button class="pcard" data-provider="gemini" data-kind="oauth">
+        <span class="pcard-logo">✦</span>
+        <span class="pcard-body">
+          <strong>Google Gemini</strong>
+          <small>Ücretsiz · kart istemez</small>
+        </span>
+        <span class="pcard-badge free">ÜCRETSİZ</span>
+      </button>
+
+      <button class="pcard" data-provider="openrouter" data-kind="oauth">
+        <span class="pcard-logo">⇄</span>
+        <span class="pcard-body">
+          <strong>OpenRouter</strong>
+          <small>:free modeller · tek anahtar</small>
+        </span>
+        <span class="pcard-badge free">ÜCRETSİZ</span>
+      </button>
+
+      <button class="pcard" data-provider="groq" data-kind="manual">
+        <span class="pcard-logo">⚡</span>
+        <span class="pcard-body">
+          <strong>Groq</strong>
+          <small>Çok hızlı · ücretsiz kota</small>
+        </span>
+        <span class="pcard-badge free">ÜCRETSİZ</span>
+      </button>
+
+      <button class="pcard" data-provider="xkiro" data-kind="manual">
+        <span class="pcard-logo">⚡</span>
+        <span class="pcard-body">
+          <strong>xKiro</strong>
+          <small>69 model · 26'sı ücretsiz</small>
+        </span>
+        <span class="pcard-badge free">ÜCRETSİZ</span>
+      </button>
+
+      <button class="pcard" data-provider="modelscope" data-kind="manual">
+        <span class="pcard-logo">🇨🇳</span>
+        <span class="pcard-body">
+          <strong>ModelScope</strong>
+          <small>Günde 2000 çağrı bedava</small>
+        </span>
+        <span class="pcard-badge free">ÜCRETSİZ</span>
+      </button>
+
+      <button class="pcard" data-provider="ollama" data-kind="none" id="cardOllama">
+        <span class="pcard-logo">🦙</span>
+        <span class="pcard-body">
+          <strong>Ollama (yerel)</strong>
+          <small id="ollamaCardHint">Anahtar yok · veri dışarı çıkmaz</small>
+        </span>
+        <span class="pcard-badge local" id="ollamaCardBadge">YEREL</span>
+      </button>
+
+      <button class="pcard" data-provider="lmstudio" data-kind="none">
+        <span class="pcard-logo">🖥️</span>
+        <span class="pcard-body">
+          <strong>LM Studio (yerel)</strong>
+          <small>Masaüstü uygulaması · anahtarsız</small>
+        </span>
+        <span class="pcard-badge local">YEREL</span>
+      </button>
+    </div>
+
+    <div id="ollamaBanner" class="ollama-banner" style="display:none;"></div>
+    <button id="btnRescanLocal" class="link-btn" style="margin-top:6px;">🔄 Yerel sunucuları yeniden tara (Ollama · LM Studio · llama.cpp)</button>
+
+    <button id="btnShowAll" class="link-btn">＋ Diğer 33 sağlayıcıyı göster (Çin · Japonya · yerel · özel)</button>
+
+    <div id="allProvidersBox" style="display:none;margin-top:10px;">
+      <input id="providerSearch" class="input" placeholder="🔍 Ara: qwen, kimi, japon, glm, deepseek…" />
+      <select id="cfgAiProvider" class="input" style="margin-top:6px;"></select>
+      <button id="btnPickFromList" class="btn-primary" style="margin-top:6px;">Bu sağlayıcıyı kullan</button>
+    </div>
+  </div>
+
+  <!-- ---------- KAYITLI ANAHTARLAR ---------- -->
+  <div class="card">
+    <div class="card-title">
+      <h2>2. Bağlı hesaplarınız</h2>
+      <p class="hint">Her anahtar ayrı ayrı ve kalıcı saklanır. İstediğiniz an geçiş yapın.</p>
+    </div>
+    <div id="keyList" class="keylist">
+      <div class="empty">Henüz bağlı hesap yok. Yukarıdan bir sağlayıcı seçin.</div>
+    </div>
+  </div>
+
+  <!-- ---------- BAĞLANTI KUR ---------- -->
+  <div class="card" id="connectCard">
+    <div class="card-title">
+      <h2 id="connectTitle">Bağlantı kur</h2>
+      <p class="hint" id="connectHint">Bir sağlayıcı seçin.</p>
+    </div>
+
+    <!-- OAuth -->
+    <div id="oauthRow" style="display:none;">
+      <button id="btnOAuth" class="btn-primary btn-oauth-big">🔐 Tarayıcıda giriş yap ve bağlan</button>
+      <div id="identityDiag" class="diag" style="display:none;"></div>
+      <div id="googleClientRow" style="display:none;margin-top:8px;">
+        <label class="lbl">Google OAuth İstemci Kimliği <span class="muted">(tek seferlik)</span></label>
+        <input id="cfgGoogleClientId" class="input" placeholder="…apps.googleusercontent.com" />
+        <p class="micro">console.cloud.google.com → Credentials → Create OAuth client ID → Chrome Extension.
+          Bununla uğraşmak istemezseniz aşağıdan <b>AIza…</b> API anahtarı girebilirsiniz.</p>
+      </div>
+    </div>
+
+    <!-- Manuel anahtar -->
+    <div id="manualRow">
+      <label class="lbl">API Anahtarı</label>
+      <div class="row">
+        <input id="cfgAiApiKey" type="password" class="input" placeholder="Anahtarınızı yapıştırın" />
+        <button id="btnSaveKey" class="btn-primary btn-compact">💾 Kaydet</button>
+      </div>
+      <div class="row row-tight">
+        <button id="btnGetKey" class="link-btn">🔑 Anahtarı nereden alacağım?</button>
+        <button id="btnClearKey" class="link-btn danger-link">🗑 Kayıtlı anahtarı sil</button>
+      </div>
+    </div>
+
+    <!-- Model -->
+    <div style="margin-top:10px;">
+      <label class="lbl">Model</label>
+      <div class="row">
+        <input id="cfgAiModel" class="input" placeholder="model adı" />
+        <button id="btnListModels" class="btn-ghost btn-compact" title="Sağlayıcıdan modelleri çek">📋</button>
+      </div>
+      <select id="modelSelect" class="input" style="margin-top:5px;display:none;"></select>
+    </div>
+
+    <input id="cfgAiBaseUrl" class="input" style="display:none;" />
+    <input id="cfgAiVision" type="checkbox" style="display:none;" />
+
+    <div id="aiTestResult" class="ai-test-result"></div>
+
+    <button id="btnTestAi" class="btn-ghost" style="width:100%;margin-top:8px;">🔌 Bağlantıyı Test Et</button>
+  </div>
+</main>
+
+<!-- ================= GÖREV SEKMESİ ================= -->
+<main class="tab-panel" id="tab-work">
+
+  <!-- ---------- MİSYON: kalıcı hedef + otonom görev listesi ---------- -->
+  <div class="card" id="missionCard">
+    <div class="card-title">
+      <h2>🎯 Misyon (kalıcı hedef)</h2>
+      <p class="hint">Büyük hedefi yazın — ajan kendi görev listesini kurar ve durmadan yürütür.</p>
+    </div>
+
+    <div id="missionSetup">
+      <textarea id="missionInput" rows="3" placeholder="Örn: https://site-adresim.com adresine git, hesabıma bağlan, panelime gir, tema ayarlarını düzenle ve reklam geliri üretecek şekilde yapılandır. Hedef: ayda 100 dolar gelir."></textarea>
+
+      <div class="row" style="margin-top:8px;gap:8px;">
+        <label class="chk" style="flex:1;">
+          <input type="checkbox" id="mAutoContinue" checked />
+          <span>Kendiliğinden devam et</span>
+        </label>
+        <label class="lbl" style="font-size:10.5px;">Ara (dk)
+          <input id="mInterval" class="input" type="number" min="1" max="60" value="3" style="width:56px;" />
+        </label>
+      </div>
+
+      <button id="btnMissionStart" class="btn-primary" style="width:100%;margin-top:9px;">🚀 Misyonu başlat (planı oluştur)</button>
+      <p class="micro" style="margin-top:6px;">
+        Ajan hedefi 4-10 adıma böler, her adımı çalıştırır, sayfaya bakıp doğrular.
+        Token biterse sağlayıcı değiştirir; tarayıcı kapansa bile kaldığı yerden sürer.
+      </p>
+    </div>
+
+    <div id="missionBoard" style="display:none;">
+      <div class="mission-head">
+        <div>
+          <strong id="mTitle">—</strong>
+          <div class="muted" id="mMetric" style="font-size:10.5px;margin-top:2px;"></div>
+        </div>
+        <span id="mStatus" class="m-badge">—</span>
+      </div>
+
+      <div class="m-progress"><div id="mBar"></div></div>
+      <div class="muted" id="mProgressText" style="font-size:10.5px;margin-top:4px;"></div>
+
+      <div id="mSteps" class="m-steps"></div>
+
+      <div class="row" style="margin-top:9px;gap:6px;">
+        <button id="btnMissionResume" class="btn-primary" style="flex:1;">▶ Sürdür</button>
+        <button id="btnMissionPause" class="btn-ghost" style="flex:1;">⏸ Duraklat</button>
+        <button id="btnMissionClear" class="btn-ghost btn-compact" title="Misyonu sil">🗑</button>
+      </div>
+      <button id="btnMissionNew" class="link-btn" style="margin-top:6px;">＋ Yeni misyon</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <h2>Ne yapmasını istiyorsunuz?</h2>
+      <p class="hint" id="workProviderHint">Yapay zekâ seçilmedi.</p>
+    </div>
+    <textarea id="goalInput" rows="3" placeholder="Örn: Bu oyunda Başla'ya tıkla ve Space ile zıpla"></textarea>
+
+    <div class="perf-pills" id="perfSelector">
+      <button data-perf="eco" title="En düşük kaynak kullanımı">🌱 Ekonomik</button>
+      <button data-perf="balanced" class="selected" title="Dengeli (önerilen)">⚡ Dengeli</button>
+      <button data-perf="game" title="60 Hz tuş tutma, web oyunları">🎮 Oyun</button>
+    </div>
+
+    <div class="task-mode" style="margin-top:10px;">
+      <label class="lbl">Nerede çalışsın?</label>
+      <div class="perf-pills" id="taskModeSelector">
+        <button data-mode="fresh_browser" class="selected" title="Kendi açık sekmelerinize dokunmaz">🗔 Yeni pencere</button>
+        <button data-mode="reuse_tab" title="Zaten açık olan sekmeyi kullanır">📑 Mevcut sekme</button>
+      </div>
+      <p class="micro" id="taskModeHint">Yeni pencere: mevcut sekmeleriniz karışmaz, ayrı pencere açılır.</p>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <button id="btnStartAgent" class="btn-primary" style="flex:1;">▶ Görevi Başlat</button>
+      <button id="btnTestGhost" class="btn-ghost btn-compact" title="Fiziksel farenizi oynatırken sanal imleci izleyin">👻</button>
+    </div>
+  </div>
+
+  <div class="card" id="memoryCard" style="display:none;">
+    <div class="card-head">
+      <h3>🧠 Görev hafızası</h3>
+      <span id="memStatus" class="muted"></span>
+    </div>
+    <div id="memSummary" class="mem-summary"></div>
+    <div class="row" style="margin-top:8px;">
+      <button id="btnResumeTask" class="btn-primary" style="flex:1;">▶ Kaldığı yerden devam et</button>
+      <button id="btnClearTask" class="btn-ghost btn-compact" title="Kayıtlı görevi sil">🗑</button>
+    </div>
+    <p class="micro" style="margin-top:6px;">
+      Ajan her adımı diske kaydeder. Token biterse otomatik sağlayıcı değiştirir;
+      tarayıcı kansa bile buradan devam edersiniz.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Canlı kayıt</h3>
+      <span id="stepCounter" class="muted">Boşta</span>
+    </div>
+    <div id="logBox" class="log-box"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Masaüstü köprüsü</h3>
+      <button id="btnReconnect" class="btn-mini">Yeniden bağlan</button>
+    </div>
+    <div class="row">
+      <button id="btnListWindows" class="btn-ghost" style="flex:1;">🪟 Pencereleri listele</button>
+      <button id="btnToggleMpx" class="btn-ghost" style="flex:1;" title="Linux X11: ikinci bağımsız imleç">🖱️ Çift imleç</button>
+    </div>
+    <select id="windowSelect" class="input" style="margin-top:8px;"></select>
+    <div class="row" style="margin-top:6px;">
+      <input id="bgKeyInput" class="input" placeholder="Tuş/metin (örn: space)" />
+      <button id="btnSendBgKey" class="btn-primary btn-compact">Gönder</button>
+    </div>
+    <input id="cfgDaemonUrl" type="hidden" value="ws://127.0.0.1:17380/ws" />
+    <input id="cfgDaemonToken" type="hidden" value="" />
+  </div>
+</main>
+
+<!-- ================= AYARLAR SEKMESİ ================= -->
+<main class="tab-panel" id="tab-settings">
+
+  <div class="card">
+    <div class="card-title">
+      <h2>AI erişim kontrolü</h2>
+      <p class="hint">Yapay zekâ ne yapabilir? İstediğiniz an kesin.</p>
+    </div>
+    <div class="access-pills" id="accessModes">
+      <button data-mode="open" class="selected">🔓 Tam</button>
+      <button data-mode="read_only">👁️ Okuma</button>
+      <button data-mode="locked">🔒 Kilitli</button>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <select id="accessDuration" class="input" title="Süre bitince otomatik kilitlenir">
+        <option value="0">Süre yok</option>
+        <option value="15">15 dakika</option>
+        <option value="30">30 dakika</option>
+        <option value="60">1 saat</option>
+        <option value="240">4 saat</option>
+        <option value="480">8 saat</option>
+      </select>
+      <button id="btnLockNow" class="btn-ghost btn-compact">🔒 Kilitle</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="cfgConfirmStart" /><span>Her görevden önce onay iste</span></label>
+    <label class="chk"><input type="checkbox" id="cfgKillOnLock" checked /><span>Kilitlenince görevi ve basılı tuşları kes</span></label>
+    <div class="row row-tight" style="margin-top:8px;">
+      <button id="btnOnlyThisTab" class="btn-mini" style="flex:1;">Sadece bu sekme</button>
+      <button id="btnAllowAllTabs" class="btn-mini" style="flex:1;">Tüm sekmeler</button>
+    </div>
+    <div id="allowListInfo" class="micro" style="margin-top:6px;"></div>
+    <details style="margin-top:8px;">
+      <summary>Son erişim kayıtları</summary>
+      <div id="auditBox" class="audit-box"></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><h2>Davranış</h2></div>
+    <label class="lbl">Girdi motoru</label>
+    <select id="cfgInputEngine" class="input">
+      <option value="cdp">CDP — sanal donanım (Chrome/Edge)</option>
+      <option value="synthetic">Sessiz sentetik (tüm tarayıcılar)</option>
+    </select>
+    <label class="chk" style="margin-top:8px;"><input type="checkbox" id="cfgGhostCursor" checked /><span>Hayalet imleci göster</span></label>
+    <label class="chk"><input type="checkbox" id="cfgWebAiBridge" checked /><span>Web AI sohbet köprüsü (ChatGPT/Claude sayfalarında 👻)</span></label>
+    <div class="row" style="margin-top:8px;">
+      <div style="flex:1;">
+        <label class="lbl">Maks. adım</label>
+        <input id="cfgMaxSteps" type="number" min="1" max="50" class="input" value="18" />
+      </div>
+    </div>
+    <button id="btnSaveSettings" class="btn-primary" style="width:100%;margin-top:10px;">✓ Kaydet</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><h2>Gelişmiş</h2></div>
+    <button id="btnApplyPreset" class="link-btn">⚡ Seçili sağlayıcının varsayılanlarını doldur</button>
+    <button id="btnShowAllSettings" class="link-btn">⚙️ Tüm sağlayıcı ayarlarını göster</button>
+  </div>
+
+  <div class="card" id="aboutCard">
+    <div class="card-head">
+      <h3>ℹ️ Hakkında</h3>
+      <span class="muted" style="font-size:10px;">v1.6.1</span>
+    </div>
+
+    <div class="lang-row">
+      <span class="lang-lbl">🌐 <b>Dil</b> / Language</span>
+      <div class="lang-btns">
+        <button data-lang-btn="tr" class="lang-btn active">🇹🇷 Türkçe</button>
+        <button data-lang-btn="en" class="lang-btn">🇬🇧 English</button>
+      </div>
+    </div>
+
+    <div class="ref-grid">
+      <a class="ref" data-url="https://github.com/btmcode" title="GitHub">
+        <svg viewBox="0 0 16 16" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        <span>GitHub</span><small>btmcode</small>
+      </a>
+      <a class="ref" data-url="https://btmcode.vercel.app" title="Web">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5a15 15 0 0 1 0 19 15 15 0 0 1 0-19Z"/></svg>
+        <span>Web</span><small>btmcode.vercel.app</small>
+      </a>
+      <a class="ref" data-url="https://mnemark.blogspot.com" title="Blog">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H15l5 5v10.5A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+        <span>Blog</span><small>mnemark.blogspot.com</small>
+      </a>
+      <a class="ref ref-coffee" data-url="https://buymeacoffee.com/devcloudpy" title="Buy me a coffee">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 4.5c0 .6-.5 1-.5 1.6M11 4.5c0 .6-.5 1-.5 1.6"/></svg>
+        <span>Coffee</span><small>buymeacoffee.com</small>
+      </a>
+    </div>
+
+    <div class="about-meta">
+      <span>© 2026 <b>BTM Code</b></span><span class="dot">·</span><span>MIT</span><span class="dot">·</span><span>açık kaynak / open source</span>
+    </div>
+
+    <button id="btnSupport" class="btn-support">☕ Buy me a coffee — buymeacoffee.com/devcloudpy</button>
+
+    <p class="micro">
+      © 2026 BTM Code. MIT lisansı altında paylaşılmıştır; telif bildirimi korunduğu sürece
+      kopyalayabilir, değiştirebilir ve dağıtabilirsiniz.<br>
+      <b>Gizlilik:</b> hiçbir telemetri yok · anahtarlarınız yalnızca bu tarayıcıda · şifre alanları hiç okunmaz.
+    </p>
+  </div>
+</main>
+
+<script src="access.js"></script>
+<script src="i18n.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>

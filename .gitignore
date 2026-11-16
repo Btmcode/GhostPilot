@@ -1,0 +1,17 @@
+# GhostPilot — sürüm kontrolü dışında tutulacaklar
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.db
+*.sqlite
+.env
+.env.*
+ghostpilot_kurulum.json
+~/.ghostpilot/
+node_modules/
+dist/
+build/
+.DS_Store
+Thumbs.db
+*.zip
