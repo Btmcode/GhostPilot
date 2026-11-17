@@ -1202,3 +1202,33 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .dl-cat.tarayıcı { background: rgba(34,211,238,.2); color: #67e8f9; }
 .dl-cat.misyon { background: rgba(245,182,66,.2); color: #fcd34d; }
 .dl-cat.genel, .dl-cat.hata { background: rgba(134,152,174,.2); color: #cbd5e1; }
+
+/* ---- GitHub yıldız butonu ---- */
+.btn-star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 14px;
+  font: 750 12px/1 system-ui, sans-serif;
+  color: #fcd34d;
+  text-decoration: none;
+  background: linear-gradient(135deg, rgba(245,182,66,.14), rgba(245,182,66,.06));
+  border: 1px solid rgba(245,182,66,.45);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background .16s var(--ease), border-color .16s var(--ease), transform .1s var(--ease);
+}
+.btn-star:hover {
+  background: linear-gradient(135deg, rgba(245,182,66,.24), rgba(245,182,66,.1));
+  border-color: rgba(245,182,66,.7);
+}
+.btn-star:active { transform: translateY(1px); }
+.btn-star small {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #b9a67a;
+  letter-spacing: .2px;
+}

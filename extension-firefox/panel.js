@@ -1143,6 +1143,15 @@
       openUrl(a.dataset.url);
     });
   });
+
+  // GitHub yıldız butonu — depo sayfasını yeni sekmede aç
+  const starBtn = $("btnStar");
+  if (starBtn) {
+    starBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openUrl(starBtn.dataset.url);
+    });
+  }
   $("btnSupport").addEventListener("click", () => openUrl("https://buymeacoffee.com/btmcode"));
 
   // "Yeni misyon" butonu tek giriş noktasına taşındı (missionPanel içinde)

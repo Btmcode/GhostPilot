@@ -82,9 +82,13 @@ try {
   console.log('\n═══ 4. REFERANS KARTLARI ═══');
   const refs = await panel.locator('#aboutCard .ref').count();
   ok('4 referans kartı (GitHub/Web/Blog/Coffee)', refs === 4, String(refs));
-  const gh = await panel.locator('.ref[data-url*="github.com/btmcode"]').count();
+  // GitHub ikonu artık REPOYA gitmeli (kullanıcı profiline değil) — yıldız verilebilsin
+  const gh = await panel.locator('.ref[data-url="https://github.com/Btmcode/GhostPilot"]').count();
   const bmc = await panel.locator('.ref[data-url*="buymeacoffee"]').count();
-  ok('GitHub + Coffee kartı', gh === 1 && bmc === 1);
+  const star = await panel.locator('#btnStar[data-url="https://github.com/Btmcode/GhostPilot"]').count();
+  ok('GitHub ikonu repoya gidiyor', gh === 1, String(gh));
+  ok('Coffee kartı', bmc === 1);
+  ok('Yıldız butonu repoya gidiyor', star === 1, String(star));
 
   // ---- 6) content script: hassas alan koruması ----
   console.log('\n═══ 5. HASSAS ALAN KORUMASI (canlı sayfa) ═══');

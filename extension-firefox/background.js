@@ -691,11 +691,10 @@ function tabProblem(tab) {
            `Chrome güvenlik gereği başka eklentilerin sayfalarına izin vermez. ` +
            `Çözüm: normal bir web sitesi sekmesi açın (örn. https://www.blogger.com) ve görevi o sekmede başlatın.`;
   }
-  if (isSensitiveSettingsUrl(u)) {
-    return `Bu bir hesap/ayar sayfası (${u.slice(0, 50)}…). GhostPilot burada çalışabilir ama ` +
-           `hesap güvenliği için önerilmez — 2FA/CAPTCHA oturumu kilitleyebilir. ` +
-           `Mümkünse normal bir içerik sayfası kullanın veya işlemi elle yapın.`;
-  }
+  // NOT: Hesap/ayar sayfaları ENGELLENMEZ — yalnızca uyarı verilir (aşağıda,
+  // kullanıcıya bilgi olarak gösterilir). Önceden burada hata fırlatılıyordu ve
+  // kullanıcı Facebook'a gitmek isterken eski GitHub sekmesi yüzünden
+  // "hesap/ayar sayfası" hatası alıyordu.
   if (isRestrictedUrl(u)) {
     return `Bu adres tarayıcı tarafından korunuyor (${u.slice(0, 60)}…) — otomasyona kapalı. Normal bir web sayfası kullanın.`;
   }
@@ -2357,21 +2356,27 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
       startTab = await getActiveOrTargetTab(explicitTabId);
     } catch (err) {
       if (err.gpKind !== "bad_target") throw err;
-      const alt = await findWebTab();
-      if (alt) {
-        startTab = alt;
-        pushLog("info", `↩ Kullanılabilir sekme seçildi: ${(alt.url || "").slice(0, 55)}`);
+      // Görevde açık bir adres varsa, o adrese gitmek için YENİ SEKME aç.
+      // Rastgele bir sekme seçmek kullanıcıyı şaşırtıyordu.
+      const goalUrl = extractFirstUrl(goal);
+      if (goalUrl) {
+        pushLog("info", `↩ Aktif sekme kullanılamıyor — görev adresi yeni sekmede açılıyor: ${goalUrl.slice(0, 55)}`);
+        startTab = await openInNewTab(goalUrl);
       } else {
-        // Hiç kullanılabilir sekme yok → görev penceresi aç (otomatik kurtarma).
-        // Önceden burada hata fırlatılıyordu; artık kendiliğinden devam eder.
-        pushLog("warn",
-          "Kullanılabilir web sekmesi yok (yeni sekme / chrome:// / eklenti sayfaları otomasyona kapalı). " +
-          "Görev penceresi otomatik açılıyor.");
-        const firstUrl = extractFirstUrl(goal);
-        const win = await openTaskWindow(goal, firstUrl);
-        startTab = win.tab;
-        if (dup.duplicates) {
-          pushLog("error", "⚠ Çift kurulum tespit edildi — bu hata genelde iki GhostPilot kurulu olmasından kaynaklanır.");
+        const alt = await findWebTab();
+        if (alt) {
+          startTab = alt;
+          pushLog("info", `↩ Kullanılabilir sekme seçildi: ${(alt.url || "").slice(0, 55)}`);
+        } else {
+          // Hiç kullanılabilir sekme yok → görev penceresi aç (otomatik kurtarma).
+          pushLog("warn",
+            "Kullanılabilir web sekmesi yok (yeni sekme / chrome:// / eklenti sayfaları otomasyona kapalı). " +
+            "Görev penceresi otomatik açılıyor.");
+          const win = await openTaskWindow(goal, "");
+          startTab = win.tab;
+          if (dup.duplicates) {
+            pushLog("error", "⚠ Çift kurulum tespit edildi — bu hata genelde iki GhostPilot kurulu olmasından kaynaklanır.");
+          }
         }
       }
     }
@@ -2388,6 +2393,13 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
     journal = await journalStart(goal, startTab.id);
     journal.windowId = startTab.windowId;
     await journalSave(journal);
+  }
+
+  // Hesap/ayar sayfası uyarısı — engelleme YOK, sadece bilgilendirme
+  if (startTab && isSensitiveSettingsUrl(startTab.url || "")) {
+    pushLog("warn",
+      `⚠ Hedef sekme bir hesap/ayar sayfası (${String(startTab.url).slice(0, 55)}…). ` +
+      `Çalışır ama 2FA/CAPTCHA oturumu kilitleyebilir. Sorun çıkarsa normal bir içerik sayfası kullanın.`);
   }
 
   agentState = {
