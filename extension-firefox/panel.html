@@ -47,10 +47,11 @@
 </div>
 
 <!-- ================= SEKMELER ================= -->
-<nav class="tabs tabs-3">
+<nav class="tabs tabs-4">
   <button class="tab active" data-tab="ai">🤖 Yapay Zekâ</button>
   <button class="tab" data-tab="work">▶ Görev</button>
   <button class="tab" data-tab="settings">⚙ Ayarlar</button>
+  <button class="tab" data-tab="devlog" id="tabDevlogBtn">🐞 DevLog<span class="tab-badge" id="devlogCount" style="display:none">0</span></button>
 </nav>
 
 <!-- ================= BAĞIŞ KARTI (açılışta 10 sn) ================= -->
@@ -224,61 +225,35 @@
 <!-- ================= GÖREV SEKMESİ ================= -->
 <main class="tab-panel" id="tab-work">
 
-  <!-- ---------- MİSYON: kalıcı hedef + otonom görev listesi ---------- -->
-  <div class="card" id="missionCard">
-    <div class="card-title">
-      <h2>Misyon</h2>
-      <p class="hint">Çok adımlı hedef tanımlayın. Ajan planı kurar, yürütür ve doğrular.</p>
-    </div>
-
-    <div id="missionSetup">
-      <textarea id="missionInput" rows="3" placeholder="Örn: https://site-adresim.com adresine git, hesabıma bağlan, panelime gir, tema ayarlarını düzenle ve reklam geliri üretecek şekilde yapılandır. Hedef: ayda 100 dolar gelir."></textarea>
-
-      <div class="row" style="margin-top:8px;gap:8px;">
-        <label class="chk" style="flex:1;">
-          <input type="checkbox" id="mAutoContinue" checked />
-          <span>Kendiliğinden devam et</span>
-        </label>
-        <label class="lbl" style="font-size:10.5px;">Ara (dk)
-          <input id="mInterval" class="input" type="number" min="1" max="60" value="3" style="width:56px;" />
-        </label>
-      </div>
-
-      <button id="btnMissionStart" class="btn-primary" style="width:100%;margin-top:9px;">Misyonu başlat</button>
-      <p class="micro" style="margin-top:6px;">
-        Kalıcıdır: tarayıcı kapansa bile kaldığı yerden devam eder.
-      </p>
-    </div>
-
-    <div id="missionBoard" style="display:none;">
-      <div class="mission-head">
-        <div>
-          <strong id="mTitle">—</strong>
-          <div class="muted" id="mMetric" style="font-size:10.5px;margin-top:2px;"></div>
-        </div>
-        <span id="mStatus" class="m-badge">—</span>
-      </div>
-
-      <div class="m-progress"><div id="mBar"></div></div>
-      <div class="muted" id="mProgressText" style="font-size:10.5px;margin-top:4px;"></div>
-
-      <div id="mSteps" class="m-steps"></div>
-
-      <div class="row" style="margin-top:9px;gap:6px;">
-        <button id="btnMissionResume" class="btn-primary" style="flex:1;">▶ Sürdür</button>
-        <button id="btnMissionPause" class="btn-ghost" style="flex:1;">⏸ Duraklat</button>
-        <button id="btnMissionClear" class="btn-ghost btn-compact" title="Misyonu sil">🗑</button>
-      </div>
-      <button id="btnMissionNew" class="link-btn" style="margin-top:6px;">＋ Yeni misyon</button>
-    </div>
-  </div>
-
   <div class="card">
     <div class="card-title">
       <h2>Ne yapmasını istiyorsunuz?</h2>
       <p class="hint" id="workProviderHint">Yapay zekâ seçilmedi.</p>
     </div>
-    <textarea id="goalInput" rows="3" placeholder="Örn: Bu oyunda Başla'ya tıkla ve Space ile zıpla"></textarea>
+
+    <!-- TEK GİRİŞ NOKTASI: tek adım veya çok adımlı misyon -->
+    <div class="runmode" id="runModeSelector" role="radiogroup" aria-label="Çalışma biçimi">
+      <button data-run="single" class="runmode-btn selected" role="radio" aria-checked="true">
+        <strong>Tek görev</strong>
+        <small>Bir kere çalışır, biter</small>
+      </button>
+      <button data-run="mission" class="runmode-btn" role="radio" aria-checked="false">
+        <strong>Misyon</strong>
+        <small>Planlar · kalıcı · kaldığı yerden sürer</small>
+      </button>
+    </div>
+
+    <textarea id="goalInput" rows="3" placeholder="Örn: github.com/settings/profile sayfamı incele ve profesyonel bir biyografi öner"></textarea>
+
+    <div id="missionOpts" style="display:none;margin-top:8px;gap:8px;" class="row">
+      <label class="chk" style="flex:1;">
+        <input type="checkbox" id="mAutoContinue" checked />
+        <span>Kendiliğinden devam et</span>
+      </label>
+      <label class="lbl" style="font-size:10.5px;">Ara (dk)
+        <input id="mInterval" class="input" type="number" min="1" max="60" value="3" style="width:56px;" />
+      </label>
+    </div>
 
     <div class="perf-pills" id="perfSelector">
       <button data-perf="eco" title="En düşük kaynak kullanımı">🌱 Ekonomik</button>
@@ -295,8 +270,29 @@
       <p class="micro" id="taskModeHint">Yeni pencere: mevcut sekmeleriniz karışmaz, ayrı pencere açılır.</p>
     </div>
 
+    <!-- Misyon ilerleme panosu — yalnız misyon başlatıldığında görünür -->
+    <div class="mission-panel" id="missionPanel" style="display:none;">
+      <div class="mission-head">
+        <div>
+          <strong id="mTitle">—</strong>
+          <div class="muted" id="mMetric" style="font-size:10.5px;margin-top:2px;"></div>
+        </div>
+        <span id="mStatus" class="m-badge">—</span>
+      </div>
+      <div class="m-progress"><div id="mBar"></div></div>
+      <div class="muted" id="mProgressText" style="font-size:10.5px;margin-top:4px;"></div>
+      <div id="mSteps" class="m-steps"></div>
+      <div class="row" style="margin-top:8px;gap:6px;">
+        <button id="btnMissionPause" class="btn-ghost btn-compact" style="flex:1;">⏸ Duraklat</button>
+        <button id="btnMissionResume" class="btn-ghost btn-compact" style="flex:1;display:none;">▶ Devam</button>
+        <button id="btnMissionClear" class="btn-ghost btn-compact" title="Misyonu sil">🗑</button>
+        <button id="btnMissionNew" class="btn-ghost btn-compact" title="Yeni misyon">＋</button>
+      </div>
+    </div>
+
     <div class="row" style="margin-top:10px;">
       <button id="btnStartAgent" class="btn-primary" style="flex:1;">▶ Görevi Başlat</button>
+      <button id="btnMissionStart" class="btn-primary" style="flex:1;display:none;">🧭 Misyonu Başlat</button>
       <button id="btnTestGhost" class="btn-ghost btn-compact" title="Fiziksel farenizi oynatırken sanal imleci izleyin">👻</button>
     </div>
   </div>
@@ -458,6 +454,44 @@
       <b>Gizlilik:</b> hiçbir telemetri yok · anahtarlarınız yalnızca bu tarayıcıda · şifre alanları hiç okunmaz.
     </p>
   </div>
+</main>
+
+<!-- ================= DEVLOG SEKMESİ ================= -->
+<main class="tab-panel" id="tab-devlog">
+
+  <div class="card">
+    <div class="card-head">
+      <h3>🐞 DevLog — hata &amp; uyarı geçmişi</h3>
+      <div class="log-actions">
+        <button id="btnDevlogCopy" class="icon-mini" title="DevLog'u kopyala">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+        </button>
+        <button id="btnDevlogClear" class="icon-mini" title="DevLog'u temizle">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="hint">Tarayıcı kapansa bile saklanır. Sorun bildirirken burayı kopyalayıp paylaşabilirsiniz.</p>
+
+    <div class="devlog-filters" id="devlogFilters">
+      <button data-cat="all" class="dlf selected">Tümü</button>
+      <button data-cat="error" class="dlf">Hata</button>
+      <button data-cat="eklenti" class="dlf">Eklenti</button>
+      <button data-cat="model" class="dlf">Model</button>
+      <button data-cat="tarayıcı" class="dlf">Tarayıcı</button>
+      <button data-cat="misyon" class="dlf">Misyon</button>
+      <button data-cat="köprü" class="dlf">Köprü</button>
+    </div>
+
+    <div id="devlogBox" class="log-box devlog-box" role="log" aria-label="DevLog kayıtları"></div>
+    <div class="devlog-empty" id="devlogEmpty">Henüz kayıt yok — her şey yolunda ✅</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>📊 Oturum özeti</h3></div>
+    <div id="devlogStats" class="devlog-stats"></div>
+  </div>
+
 </main>
 
 <script src="access.js"></script>

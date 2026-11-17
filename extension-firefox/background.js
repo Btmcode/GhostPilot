@@ -294,10 +294,68 @@ function redactSecrets(text) {
 }
 
 function pushLog(level, message) {
-  const entry = { ts: Date.now(), level, message: redactSecrets(message) };
+  const text = redactSecrets(message);
+  const entry = {
+    ts: Date.now(),
+    level,                       // info | success | warn | error | step
+    message: text,
+    cat: classifyLog(text, level) // devlog kategorisi
+  };
   agentState.logs.push(entry);
-  if (agentState.logs.length > 80) agentState.logs.shift();
+  if (agentState.logs.length > 200) agentState.logs.shift();
+
+  // Hata ve uyarıları AYRICA kalıcı devlog'a yaz (tarayıcı kapansa da durur)
+  if (level === "error" || level === "warn") {
+    devlogAppend(entry);
+  }
   broadcastUiState();
+}
+
+// ---- KALICI DEVLOG (son 300 hata/uyarı, storage'da) ----
+const DEVLOG_KEY = "gp_devlog";
+const DEVLOG_MAX = 300;
+
+function classifyLog(text, level) {
+  const t = String(text);
+  if (/different extension|Cannot access a chrome-extension/i.test(t)) return "eklenti";
+  if (/Masaüstü|daemon|WebSocket|token/i.test(t)) return "köprü";
+  if (/model|sağlayıcı|provider|API|kota|429|401|403/i.test(t)) return "model";
+  if (/sekme|pencere|tab|navigate|adres/i.test(t)) return "tarayıcı";
+  if (/Misyon|misyon|adım/i.test(t)) return "misyon";
+  if (level === "error") return "hata";
+  return "genel";
+}
+
+// Yazma kuyruğu: eşzamanlı pushLog çağrıları birbirinin kaydını EZMESİN.
+// (Önceden getConfig→saveConfig yarışıyordu ve kayıtlar kayboluyordu.)
+let devlogQueue = Promise.resolve();
+let devlogBuffer = [];
+
+function devlogAppend(entry) {
+  devlogBuffer.push({
+    ts: entry.ts, level: entry.level, cat: entry.cat, message: entry.message
+  });
+  devlogQueue = devlogQueue.then(async () => {
+    if (!devlogBuffer.length) return;
+    const batch = devlogBuffer.splice(0, devlogBuffer.length);
+    try {
+      const cfg = await getConfig();
+      const list = Array.isArray(cfg[DEVLOG_KEY]) ? cfg[DEVLOG_KEY].slice() : [];
+      list.push(...batch);
+      while (list.length > DEVLOG_MAX) list.shift();
+      await saveConfig({ [DEVLOG_KEY]: list });
+    } catch (_) {}
+  }).catch(() => {});
+  return devlogQueue;
+}
+
+async function devlogClear() {
+  await saveConfig({ [DEVLOG_KEY]: [] });
+}
+
+async function devlogList() {
+  const cfg = await getConfig();
+  return Array.isArray(cfg[DEVLOG_KEY]) ? cfg[DEVLOG_KEY] : [];
 }
 
 function broadcastUiState() {
@@ -1984,7 +2042,10 @@ async function missionStart(objective, opts = {}) {
     log: [],
     autoContinue: opts.autoContinue !== false,
     intervalMinutes: Math.max(1, Number(opts.intervalMinutes || 3)),
-    maxCycles: Math.max(1, Number(opts.maxCycles || 40))
+    maxCycles: Math.max(1, Number(opts.maxCycles || 40)),
+    // Kullanıcının seçtiği çalışma modu — misyon boyunca DEĞİŞMEZ.
+    // Önceden her adımda config'ten okunuyordu ve yeni pencere açılıyordu.
+    taskMode: opts.taskMode || "reuse_tab"
   };
   await missionSave(mission);
   pushLog("success", `📋 Plan hazır: ${mission.steps.length} adım — "${mission.title}"`);
@@ -2006,7 +2067,9 @@ async function missionRunNext() {
   if (!m) throw new Error("Misyon bulunamadı. Panelden yeniden başlatın.");
   if (m.status !== "running") return { skipped: true, reason: m.status };
 
-  const idx = m.steps.findIndex((st) => st.status === "todo" || st.status === "failed");
+  // Yalnızca "todo" adımlar seçilir. "failed" adımlar bir daha denenmez
+  // (önceden failed adımlar tekrar tekrar seçiliyordu → sonsuz döngü).
+  const idx = m.steps.findIndex((st) => st.status === "todo");
   if (idx === -1) {
     // Tüm adımlar bitti
     m.status = "done";
@@ -2018,8 +2081,34 @@ async function missionRunNext() {
   }
 
   const step = m.steps[idx];
-  step.status = "doing";
+  // MUTLAK SINIR: bir adım en fazla MAX_STEP_ATTEMPTS kez denenir.
+  // Önceden attempts 7+ olabiliyor ve misyon aynı adımda sonsuz dönüyordu.
+  const MAX_STEP_ATTEMPTS = 3;
   step.attempts = (step.attempts || 0) + 1;
+  if (step.attempts > MAX_STEP_ATTEMPTS) {
+    step.status = "failed";
+    step.notes = step.notes || [];
+    step.notes.push(`✗ ${MAX_STEP_ATTEMPTS} denemede tamamlanamadı — atlandı`);
+    const doneN = m.steps.filter((x) => x.status === "done").length;
+    m.progress = Math.round((doneN / m.steps.length) * 100);
+    const allTried = m.steps.every((x) => ["done", "failed", "skipped"].includes(x.status));
+    if (allTried) m.status = "done";
+    await missionSave(m);
+    pushLog("error",
+      `⛔ Adım ${step.id} "${step.title}" ${MAX_STEP_ATTEMPTS} denemede tamamlanamadı — atlandı. ` +
+      `Kalan adımlarla devam ediliyor.`);
+    if (allTried) {
+      pushLog("warn", "Misyon tamamlandı ancak bazı adımlar başarısız.");
+      try { await api.alarms.clear(MISSION_ALARM); } catch (_) {}
+      return { done: true, partial: true };
+    }
+    // Sıradaki adıma geç
+    setTimeout(() => {
+      missionRunNext().catch((e) => pushLog("error", `Misyon: ${e.message || e}`));
+    }, 800);
+    return { skippedStep: step.id };
+  }
+  step.status = "doing";
   step.startedAt = Date.now();
   m.currentStep = idx;
   m.cycles = (m.cycles || 0) + 1;
@@ -2040,7 +2129,13 @@ async function missionRunNext() {
     `\n\nSadece bu adımı tamamla. Adım bitince "done" eylemiyle özet ver.`;
 
   try {
-    await runAutonomousTask(goal, null, { taskMode: (await getConfig()).taskMode || "fresh_browser" });
+    // Misyonun başında seçilen modu kullan (config'ten değil).
+    // Ayrıca misyonun kendi sekmesi varsa onu hedefle → her adımda yeni pencere açılmaz.
+    const reuseTabId = m.taskMode === "reuse_tab" ? (m.tabId || agentState.targetTabId || null) : null;
+    await runAutonomousTask(goal, reuseTabId, {
+      taskMode: m.taskMode || "reuse_tab",
+      reuseMissionTab: true
+    });
   } catch (err) {
     // Doğrulayıcı "kabul edildi" demesin diye hatayı işaretle.
     agentState.lastError = String(err.message || err);
@@ -2084,7 +2179,7 @@ async function missionRunNext() {
     s2.notes.push(`✓ ${verify.reason}`);
     pushLog("success", `✓ Adım ${s2.id} tamamlandı — ${verify.reason}`);
   } else {
-    s2.status = s2.attempts >= 3 ? "failed" : "todo";
+    s2.status = (s2.attempts || 0) >= 3 ? "failed" : "todo";
     s2.notes.push(`✗ ${verify.reason}`);
     pushLog("warn", `✗ Adım ${s2.id} doğrulanamadı (${s2.attempts}. deneme): ${verify.reason}`);
   }
@@ -2242,7 +2337,23 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
     pushLog("info", `🗔 Yeni görev penceresi açıldı (pencere #${win.windowId})`);
     if (firstUrl) pushLog("info", `🌐 Başlangıç adresi: ${firstUrl}`);
   } else {
-    try {
+    // MİSYON: önceki adımda açılan geçerli sekmeyi yeniden kullan.
+    // Böylece her adımda yeni pencere açılmaz.
+    if (opts.reuseMissionTab) {
+      const prevId = agentState.targetTabId;
+      if (prevId) {
+        const prev = await new Promise((r) =>
+          api.tabs.get(prevId, (t) => r(api.runtime.lastError ? null : t))
+        );
+        if (prev && prev.id && prev.url && !isRestrictedUrl(prev.url)) {
+          startTab = prev;
+          pushLog("info", `↩ Misyon sekmesi yeniden kullanılıyor (#${prev.id}) — yeni pencere açılmadı`);
+        }
+      }
+    }
+    if (startTab) {
+      // yeniden kullanılacak sekme bulundu — aşağıdaki aramaya gerek yok
+    } else try {
       startTab = await getActiveOrTargetTab(explicitTabId);
     } catch (err) {
       if (err.gpKind !== "bad_target") throw err;
@@ -2518,6 +2629,21 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   // Tüm sekmelerde overlay'i temizle — eklenti kaldırıldıktan sonra kalan
   // hayalet imleci de temizler (kullanıcı "imleç hâlâ görünüyor" dedi).
+  // ---- DEVLOG ----
+  if (msg.type === "GET_DEVLOG") {
+    devlogList()
+      .then((list) => sendResponse({ ok: true, list, logs: agentState.logs || [] }))
+      .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  }
+
+  if (msg.type === "CLEAR_DEVLOG") {
+    devlogClear()
+      .then(() => sendResponse({ ok: true }))
+      .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  }
+
   // Debug logu temizle
   if (msg.type === "CLEAR_LOGS") {
     agentState.logs = [];

@@ -1024,100 +1024,95 @@
 
   async function refreshMission() {
     const res = await sendBg({ type: "MISSION_GET" });
-    const m = res.ok ? res.result?.mission : null;
-    if (!m) {
-      $("missionSetup").style.display = "";
-      $("missionBoard").style.display = "none";
-      return;
-    }
-    $("missionSetup").style.display = "none";
-    $("missionBoard").style.display = "";
-    $("mTitle").textContent = m.title || m.objective;
-    $("mMetric").textContent = m.metric ? `📊 ${m.metric}` : "";
+    const m = res.ok ? (res.result?.mission || res.mission) : null;
+    // Misyon panosu tek giriş noktasının içinde (missionPanel)
+    const panel = $("missionPanel");
+    if (!panel) return;
+    if (!m) { panel.style.display = "none"; return; }
+    panel.style.display = "";
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+    set("mTitle", m.title || m.objective || "Misyon");
+    set("mMetric", m.metric ? `📊 ${m.metric}` : "");
     const badge = $("mStatus");
-    badge.className = "m-badge " + (m.status || "paused");
-    badge.textContent = { running: "ÇALIŞIYOR", paused: "DURAKLATILDI", done: "TAMAMLANDI", failed: "HATA" }[m.status] || m.status;
-    $("mBar").style.width = (m.progress || 0) + "%";
-    const doneN = m.steps.filter((x) => x.status === "done").length;
-    const failN = m.steps.filter((x) => x.status === "failed").length;
-    $("mProgressText").textContent =
-      `${doneN}/${m.steps.length} adım tamamlandı` +
+    if (badge) {
+      badge.className = "m-badge " + (m.status || "paused");
+      badge.textContent = { running: "ÇALIŞIYOR", paused: "DURAKLATILDI", done: "TAMAMLANDI", failed: "HATA" }[m.status] || m.status;
+    }
+    const bar = $("mBar");
+    if (bar) bar.style.width = (m.progress || 0) + "%";
+    const doneN = (m.steps || []).filter((x) => x.status === "done").length;
+    const failN = (m.steps || []).filter((x) => x.status === "failed").length;
+    set("mProgressText",
+      `${doneN}/${(m.steps || []).length} adım tamamlandı` +
       (failN ? ` · ${failN} başarısız` : "") +
       ` · ${m.cycles || 0} döngü` +
-      (m.autoContinue ? " · oto-devam açık" : "");
-
+      (m.taskMode === "reuse_tab" ? " · mevcut sekme" : ""));
     const box = $("mSteps");
-    box.innerHTML = "";
-    for (const st of m.steps) {
-      const row = document.createElement("div");
-      row.className = "m-step " + st.status;
-      const ic = document.createElement("span");
-      ic.className = "ic";
-      ic.textContent = STEP_ICONS[st.status] || "○";
-      const tt = document.createElement("div");
-      tt.className = "tt";
-      tt.innerHTML = `${escapeHtml(st.title)}` +
-        (st.done ? `<small>✔ ölçüt: ${escapeHtml(st.done)}</small>` : "") +
-        (st.attempts > 1 ? `<small>${st.attempts} deneme</small>` : "");
-      row.appendChild(ic);
-      row.appendChild(tt);
-      if (st.status === "todo" || st.status === "failed") {
-        const sk = document.createElement("button");
-        sk.className = "skipbtn";
-        sk.textContent = gpTr("atla");
-        sk.title = "Bu adımı atla";
-        sk.onclick = async () => {
-          await sendBg({ type: "MISSION_STEP_SKIP", stepId: st.id });
-          refreshMission();
-        };
-        row.appendChild(sk);
+    if (box) {
+      box.innerHTML = "";
+      for (const st of m.steps || []) {
+        const row = document.createElement("div");
+        row.className = "m-step " + st.status;
+        const ic = document.createElement("span");
+        ic.className = "ic";
+        ic.textContent = STEP_ICONS[st.status] || "○";
+        const tt = document.createElement("div");
+        tt.className = "tt";
+        tt.innerHTML = escapeHtml(st.title) +
+          (st.done ? `<small>✔ ${escapeHtml(st.done)}</small>` : "") +
+          (st.notes && st.notes.length ? `<small>${escapeHtml(st.notes[st.notes.length - 1])}</small>` : "");
+        row.appendChild(ic); row.appendChild(tt);
+        box.appendChild(row);
       }
-      box.appendChild(row);
     }
-    $("btnMissionResume").style.display = m.status === "running" ? "none" : "";
-    $("btnMissionPause").style.display = m.status === "running" ? "" : "none";
+    const rB = $("btnMissionResume"), pB = $("btnMissionPause");
+    if (rB) rB.style.display = m.status === "running" ? "none" : "";
+    if (pB) pB.style.display = m.status === "running" ? "" : "none";
   }
 
-  $("btnMissionStart").addEventListener("click", async () => {
-    const objective = $("missionInput").value.trim();
-    if (!objective) { appendLog("warn", "Misyon hedefini yazın."); return; }
+  // Misyonu başlat (tek giriş noktasındaki buton)
+  const mStartBtn = $("btnMissionStart");
+  if (mStartBtn) mStartBtn.addEventListener("click", async () => {
+    const objective = ($("goalInput")?.value || "").trim();
+    if (!objective) { appendLog("warn", "Önce hedefi yazın."); return; }
     const btn = $("btnMissionStart");
     btn.disabled = true;
-    btn.textContent = gpTr("⏳ Plan oluşturuluyor…");
+    btn.textContent = "⏳ Plan oluşturuluyor…";
     const res = await sendBg({
       type: "MISSION_START",
       objective,
       opts: {
-        autoContinue: $("mAutoContinue").checked,
-        intervalMinutes: Number($("mInterval").value) || 3
+        autoContinue: $("mAutoContinue")?.checked !== false,
+        intervalMinutes: Number($("mInterval")?.value) || 3,
+        taskMode   // KRİTİK: her adımda yeni pencere açılmasını önler
       }
     });
     btn.disabled = false;
-    btn.textContent = gpTr("🚀 Misyonu başlat (planı oluştur)");
-    if (!res.ok) {
-      appendLog("error", res.error || "Misyon başlatılamadı.");
-      return;
-    }
+    btn.textContent = "🧭 Misyonu Başlat";
+    if (!res.ok) { appendLog("error", res.error || "Misyon başlatılamadı."); return; }
     const m = res.mission;
     appendLog("success", `🎯 Misyon kuruldu: "${m.title}" — ${m.steps.length} adım`);
-    m.steps.forEach((st) => appendLog("step", `  ${st.id}. ${st.title}`));
+    (m.steps || []).forEach((st) => appendLog("step", `  ${st.id}. ${st.title}`));
     await refreshMission();
   });
 
-  $("btnMissionResume").addEventListener("click", async () => {
+  const _resumeB = $("btnMissionResume");
+  if (_resumeB) _resumeB.addEventListener("click", async () => {
     const res = await sendBg({ type: "MISSION_RESUME" });
     if (res.ok) appendLog("info", "▶ Misyon sürdürülüyor…");
     else appendLog("error", res.error || "Sürdürülemedi.");
     setTimeout(refreshMission, 800);
   });
 
-  $("btnMissionPause").addEventListener("click", async () => {
+  const _pauseB = $("btnMissionPause");
+  if (_pauseB) _pauseB.addEventListener("click", async () => {
     await sendBg({ type: "MISSION_PAUSE" });
     appendLog("info", "⏸ Misyon duraklatıldı. Kaldığı adım kaydedildi.");
     setTimeout(refreshMission, 500);
   });
 
-  $("btnMissionClear").addEventListener("click", async () => {
+  const _clearB = $("btnMissionClear");
+  if (_clearB) _clearB.addEventListener("click", async () => {
     if (!confirm("Misyon ve tüm görev listesi silinsin mi?")) return;
     await sendBg({ type: "MISSION_CLEAR" });
     await refreshMission();
@@ -1150,20 +1145,48 @@
   });
   $("btnSupport").addEventListener("click", () => openUrl("https://buymeacoffee.com/btmcode"));
 
-  $("btnMissionNew").addEventListener("click", () => {
-    $("missionBoard").style.display = "none";
-    $("missionSetup").style.display = "";
-    $("missionInput").value = "";
-    $("missionInput").focus();
+  // "Yeni misyon" butonu tek giriş noktasına taşındı (missionPanel içinde)
+  const mNewBtn = $("btnMissionNew");
+  if (mNewBtn) mNewBtn.addEventListener("click", () => {
+    const panel = $("missionPanel");
+    if (panel) panel.style.display = "none";
+    const gi = $("goalInput");
+    if (gi) { gi.value = ""; gi.focus(); }
+    const rb = $("btnMissionResume");
+    if (rb) rb.style.display = "";
   });
 
+  // ---- Çalışma biçimi: tek görev / misyon (TEK giriş noktası) ----
+  let runMode = "single";
+  function syncRunMode() {
+    document.querySelectorAll("#runModeSelector .runmode-btn").forEach((b) => {
+      const on = b.dataset.run === runMode;
+      b.classList.toggle("selected", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+    const mo = $("missionOpts");
+    if (mo) mo.style.display = runMode === "mission" ? "flex" : "none";
+    const ba = $("btnStartAgent");
+    const bm = $("btnMissionStart");
+    if (ba) ba.style.display = runMode === "single" ? "" : "none";
+    if (bm) bm.style.display = runMode === "mission" ? "" : "none";
+    const gi = $("goalInput");
+    if (gi) gi.rows = runMode === "mission" ? 4 : 3;
+  }
+  document.querySelectorAll("#runModeSelector .runmode-btn").forEach((b) => {
+    b.addEventListener("click", () => { runMode = b.dataset.run; syncRunMode(); });
+  });
+  syncRunMode();
+
   // ---- Görev modu ----
-  let taskMode = "fresh_browser";
+  // Sekme kalıcı: panel kapansa da seçim korunur (yeni pencere sürprizi olmaz)
+  let taskMode = "reuse_tab";
   document.querySelectorAll("#taskModeSelector button").forEach((b) => {
     b.addEventListener("click", () => {
       document.querySelectorAll("#taskModeSelector button").forEach((x) => x.classList.remove("selected"));
       b.classList.add("selected");
       taskMode = b.dataset.mode;
+      chrome.storage.local.set({ taskMode });
       $("taskModeHint").textContent =
         taskMode === "fresh_browser"
           ? "Yeni pencere: mevcut sekmeleriniz karışmaz, ayrı pencere açılır."
@@ -1469,9 +1492,110 @@
     });
   }
 
+  // ---------------------------------------------------------------- DEVLOG
+  let devlogData = { list: [], logs: [] };
+  let devlogFilter = "all";
+
+  async function loadDevlog() {
+    const res = await sendBg({ type: "GET_DEVLOG" });
+    if (!res.ok) return;
+    devlogData = { list: res.list || [], logs: res.logs || [] };
+    renderDevlog();
+  }
+
+  function renderDevlog() {
+    const box = $("devlogBox");
+    if (!box) return;
+    const items = (devlogData.list || []).slice().reverse();   // yeni → eski
+    const filtered = devlogFilter === "all"
+      ? items
+      : items.filter((x) => x.cat === devlogFilter || (devlogFilter === "error" && x.level === "error"));
+
+    box.innerHTML = "";
+    for (const it of filtered) {
+      const d = document.createElement("div");
+      d.className = `log-line ${it.level}`;
+      const t = new Date(it.ts).toLocaleTimeString("tr-TR");
+      d.innerHTML = `[${t}] <span class="dl-cat ${it.cat}">${it.cat}</span>${escapeHtml(it.message)}`;
+      box.appendChild(d);
+    }
+    const empty = $("devlogEmpty");
+    if (empty) empty.style.display = filtered.length ? "none" : "";
+
+    // Sayaç: son 24 saatteki hata sayısı
+    const dayAgo = Date.now() - 86400000;
+    const errs = (devlogData.list || []).filter((x) => x.level === "error" && x.ts > dayAgo).length;
+    const badge = $("devlogCount");
+    if (badge) {
+      badge.textContent = errs;
+      badge.style.display = errs ? "" : "none";
+    }
+
+    // Oturum özeti
+    const stats = $("devlogStats");
+    if (stats) {
+      const total = devlogData.list.length;
+      const errN = devlogData.list.filter((x) => x.level === "error").length;
+      const warnN = devlogData.list.filter((x) => x.level === "warn").length;
+      const cats = {};
+      for (const x of devlogData.list) cats[x.cat] = (cats[x.cat] || 0) + 1;
+      const top = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+      stats.innerHTML =
+        `<div class="dl-stat"><b>${total}</b><span>kayıt</span></div>` +
+        `<div class="dl-stat"><b style="color:#f87171">${errN}</b><span>hata</span></div>` +
+        `<div class="dl-stat"><b style="color:#fbbf24">${warnN}</b><span>uyarı</span></div>` +
+        `<div class="dl-stat"><b>${top ? top[0] : "—"}</b><span>en sık</span></div>`;
+    }
+  }
+
+  function wireDevlog() {
+    const cp = $("btnDevlogCopy");
+    if (cp) cp.addEventListener("click", async () => {
+      const items = (devlogData.list || []).slice().reverse();
+      const text = items.map((x) =>
+        `[${new Date(x.ts).toLocaleString("tr-TR")}] [${x.level}/${x.cat}] ${x.message}`).join("\n");
+      if (!text) { showResult("info", "DevLog boş."); return; }
+      try { await navigator.clipboard.writeText(text); } catch (_) {}
+      cp.classList.add("ok");
+      setTimeout(() => cp.classList.remove("ok"), 1200);
+      showResult("ok", `📋 ${items.length} DevLog kaydı kopyalandı.`);
+    });
+    const cl = $("btnDevlogClear");
+    if (cl) cl.addEventListener("click", async () => {
+      await sendBg({ type: "CLEAR_DEVLOG" });
+      devlogData = { list: [], logs: [] };
+      renderDevlog();
+      showResult("info", "DevLog temizlendi.");
+    });
+    document.querySelectorAll("#devlogFilters .dlf").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("#devlogFilters .dlf").forEach((x) => x.classList.remove("selected"));
+        b.classList.add("selected");
+        devlogFilter = b.dataset.cat;
+        renderDevlog();
+      });
+    });
+  }
+
   // ---------------------------------------------------------------- init
   async function init() {
     buildProviderSelect();
+
+    wireDevlog();
+    loadDevlog();
+    // DevLog sekmesine geçilince tazele
+    const db = $("tabDevlogBtn");
+    if (db) db.addEventListener("click", () => loadDevlog());
+
+    // Kayıtlı çalışma modunu geri yükle
+    try {
+      const st = await new Promise((r) => chrome.storage.local.get(["taskMode"], (x) => r(x || {})));
+      if (st.taskMode) {
+        taskMode = st.taskMode;
+        document.querySelectorAll("#taskModeSelector button").forEach((x) =>
+          x.classList.toggle("selected", x.dataset.mode === taskMode));
+      }
+    } catch (_) {}
 
     wireDonateToast();
     showDonateToast();
