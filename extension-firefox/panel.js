@@ -969,8 +969,23 @@
     }
   }
 
+  // Durdurma çubuğu — görev/misyon çalışırken görünür
+  function renderStopbar(agentState, mission) {
+    const bar = $("stopbar");
+    if (!bar) return;
+    const agentOn = !!agentState?.running;
+    const missionOn = mission && mission.status === "running";
+    bar.classList.toggle("on", !!(agentOn || missionOn));
+    const info = $("sbInfo");
+    if (info) {
+      if (agentOn) info.textContent = `Görev çalışıyor · adım ${agentState.step ?? 0} · ${(agentState.goal || "").slice(0, 60)}`;
+      else if (missionOn) info.textContent = `Misyon çalışıyor · ${mission.title || ""}`;
+    }
+  }
+
   function renderState(daemonStatus, agentState) {
     renderLivebar(agentState);
+    renderStopbar(agentState, state.mission);
     const on = !!daemonStatus?.connected;
     $("dotDaemon").className = `dot ${on ? "on" : "off"}`;
     $("txtDaemon").textContent = on
@@ -1316,9 +1331,47 @@
     }
   });
 
+  // ---------------------------------------------------------------- DURDUR
+  // Tek tıkla: ajanı kes + misyonu duraklat + overlay'i temizle
+  async function stopEverything() {
+    const btn = $("btnStopTask");
+    if (btn) { btn.disabled = true; btn.textContent = "Durduruluyor…"; }
+    try {
+      // 1) Ajanı hemen durdur (sanal tuşlar serbest bırakılır)
+      await sendBg({ type: "PANIC_STOP" });
+      // 2) Misyonu duraklat (varsa)
+      const ms = await sendBg({ type: "MISSION_GET" });
+      if (ms.ok && ms.mission && ms.mission.status === "running") {
+        await sendBg({ type: "MISSION_PAUSE" });
+      }
+      // 3) Tüm sekmelerde overlay'i temizle (hayalet imleç kalmasın)
+      await sendBg({ type: "OVERLAY_OFF_ALL" });
+      showResult("info", "Görev durduruldu — sanal tuşlar bırakıldı, imleç temizlendi.");
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Görevi durdur"; }
+      refreshStateSoon();
+    }
+  }
+
+  function refreshStateSoon() {
+    setTimeout(async () => {
+      const st = await sendBg({ type: "GET_STATE" });
+      if (st && st.ok) renderState(st.daemonStatus, st.agentState);
+      const ms = await sendBg({ type: "MISSION_GET" });
+      if (ms && ms.ok) { state.mission = ms.mission; renderStopbar(ms.running ? { running: true, step: 0, goal: "" } : null, ms.mission); }
+    }, 250);
+  }
+
   // ---------------------------------------------------------------- init
   async function init() {
     buildProviderSelect();
+
+    // Durdurma çubuğu butonu
+    const sb = $("btnStopTask");
+    if (sb) sb.addEventListener("click", stopEverything);
+    // Acil durdurma (■) da aynı işi yapsın
+    const pan = $("btnPanic");
+    if (pan) pan.addEventListener("click", stopEverything, true);
 
     // Aktif modeli backend'den oku ve rozeti doldur (panel yeniden açıldığında
     // kullanıcı hangi modelde olduğunu net görsün)

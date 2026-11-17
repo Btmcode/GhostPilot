@@ -81,6 +81,14 @@
     return { key: rawKey || "Unidentified", code: rawKey || "Unidentified", keyCode: 0 };
   }
 
+  // Sayfa kapanırken / eklenti devre dışı bırakılırken overlay'i temizle.
+  // (Eklenti kaldırıldığında script çalışmaya devam eder ama bu dinleyici
+  //  sayfa kapanınca hayalet DOM bırakmaz.)
+  window.addEventListener("pagehide", destroyOverlay, { capture: true });
+  // NOT: "unload" dinleyicisi Chrome'da permissions-policy ihlali üretiyor;
+  // pagehide aynı işi yapar ve desteklenir.
+  document.addEventListener("gp-teardown", destroyOverlay);
+
   // Lazy-create GPU-accelerated Ghost Overlay
   function ensureOverlay() {
     if (!virtualState.overlayEnabled) return false;
@@ -470,6 +478,14 @@
     updateKeyHud();
   }
 
+  // Overlay'i DOM'dan TAMAMEN kaldır (hayalet imleç kalmasın)
+  function destroyOverlay() {
+    try { if (hostEl) hostEl.remove(); } catch (_) {}
+    hostEl = null;
+    cursorEl = null; rippleEl = null; hudEl = null;
+    targetEl = null; labelEl = null;
+  }
+
   function emergencyReleaseAll() {
     virtualState.abortBatch = true;
     for (const [code, entry] of virtualState.heldKeys.entries()) {
@@ -483,7 +499,8 @@
       virtualState.buttons = 0;
     }
     updateKeyHud();
-    renderGhostCursor(false, "DURDURULDU");
+    // Durdurulduğunda imleci ekranda BIRAKMA — tamamen kaldır.
+    destroyOverlay();
   }
 
   // Ultra-fast (<2ms) Compact DOM & Game Snapshot for low-RAM AI agents
@@ -781,6 +798,13 @@
     if (msg.type === "EMERGENCY_STOP") {
       emergencyReleaseAll();
       sendResponse({ ok: true });
+      return false;
+    }
+
+    // Overlay'i kapat/temizle (hayalet imleç kalmışsa)
+    if (msg.type === "OVERLAY_OFF") {
+      destroyOverlay();
+      sendResponse({ ok: true, removed: true });
       return false;
     }
 

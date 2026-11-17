@@ -251,6 +251,10 @@ const attachedTabs = new Map(); // tabId -> { idleTimer, heldCdpKeys: Set }
 let daemonSocket = null;
 let daemonStatus = { connected: false, os: null, mpxAvailable: false, lastPing: 0 };
 let reconnectTimer = null;
+let daemonFailCount = 0;        // ardışık başarısız deneme
+let daemonGaveUp = false;       // kalıcı olarak vazgeçildi mi
+let daemonAuthFailed = false;   // kimlik doğrulama hatası (tekrar denemek anlamsız)
+const DAEMON_MAX_TRIES = 5;
 
 let agentState = {
   running: false,
@@ -1100,11 +1104,29 @@ async function triggerEmergencyStop() {
 async function connectDaemon() {
   const cfg = await getConfig();
   if (!cfg.autoConnectDaemon) return;
+  // Kimlik doğrulama başarısızsa veya deneme sınırı aşıldıysa DUR.
+  // Önceden sonsuz döngüye girip konsolu dolduruyordu.
+  if (daemonGaveUp || daemonAuthFailed) return;
+  if (daemonFailCount >= DAEMON_MAX_TRIES) {
+    daemonGaveUp = true;
+    pushLog("warn",
+      `Masaüstü köprüsüne ${DAEMON_MAX_TRIES} denemede bağlanılamadı — otomatik deneme durduruldu. ` +
+      `Köprüyü başlatınca panelden "Yeniden bağlan" ile tekrar deneyin.`);
+    broadcastUiState();
+    return;
+  }
   if (daemonSocket && (daemonSocket.readyState === WebSocket.OPEN || daemonSocket.readyState === WebSocket.CONNECTING)) {
     return;
   }
 
   clearTimeout(reconnectTimer);
+  // Token yoksa köprü kimlik doğrulamayı reddeder — boşuna denemeyin.
+  if (!cfg.daemonToken) {
+    daemonAuthFailed = true;
+    pushLog("info", "Masaüstü köprüsü token'ı tanımlı değil — bağlantı denemesi atlandı. Ayarlar → Masaüstü Köprüsü'nden token girin.");
+    broadcastUiState();
+    return;
+  }
   const sep = cfg.daemonUrl.includes("?") ? "&" : "?";
   const wsUrl = `${cfg.daemonUrl}${sep}role=extension&token=${encodeURIComponent(cfg.daemonToken)}`;
 
@@ -1113,6 +1135,8 @@ async function connectDaemon() {
     daemonSocket = ws;
 
     ws.onopen = () => {
+      daemonFailCount = 0;
+      daemonAuthFailed = false;
       daemonStatus.connected = true;
       daemonStatus.lastPing = Date.now();
       broadcastUiState();
@@ -1187,7 +1211,10 @@ async function connectDaemon() {
       try { ws.close(); } catch (_) {}
     };
   } catch (_) {
-    reconnectTimer = setTimeout(connectDaemon, 8000);
+    daemonFailCount++;
+    if (daemonFailCount >= DAEMON_MAX_TRIES) { daemonGaveUp = true; return; }
+    const wait = Math.min(48000, 6000 * Math.pow(2, daemonFailCount - 1));
+    reconnectTimer = setTimeout(connectDaemon, wait);
   }
 }
 
@@ -2489,6 +2516,23 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
 api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || msg.__target === "ghostpilot_content" || msg.__target === "ghostpilot_panel") return false;
 
+  // Tüm sekmelerde overlay'i temizle — eklenti kaldırıldıktan sonra kalan
+  // hayalet imleci de temizler (kullanıcı "imleç hâlâ görünüyor" dedi).
+  if (msg.type === "OVERLAY_OFF_ALL") {
+    api.tabs.query({}, (tabs) => {
+      let n = 0;
+      for (const t of tabs || []) {
+        if (!t.id) continue;
+        n++;
+        api.tabs.sendMessage(t.id, { __target: "ghostpilot_content", type: "OVERLAY_OFF" }, () => {
+          void api.runtime.lastError;
+        });
+      }
+      sendResponse({ ok: true, tabs: n });
+    });
+    return true;
+  }
+
   if (msg.type === "PANIC_STOP") {
     triggerEmergencyStop().then(() => sendResponse({ ok: true }));
     return true;
@@ -2527,6 +2571,7 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 
   if (msg.type === "RECONNECT_DAEMON") {
+    daemonFailCount = 0; daemonGaveUp = false; daemonAuthFailed = false;
     if (daemonSocket) {
       try { daemonSocket.close(); } catch (_) {}
     }

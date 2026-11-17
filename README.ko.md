@@ -16,7 +16,7 @@
 </p>
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.7.0-green.svg)]()
+[![Version](https://img.shields.io/badge/version-1.7.1-green.svg)]()
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)]()
 [![Telemetry](https://img.shields.io/badge/telemetry-none-success.svg)](SECURITY.md)
 [![Buy Me a Coffee](https://img.shields.io/badge/%E2%98%95-Buy%20me%20a%20coffee-f59e0b?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/btmcode)

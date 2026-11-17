@@ -943,3 +943,48 @@ button:disabled { opacity: .55; cursor: not-allowed; }
     transition-duration: .001ms !important;
   }
 }
+
+/* ==========================================================================
+   Acil durdurma çubuğu — görev çalışırken her zaman erişilebilir
+   ========================================================================== */
+.stopbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 25;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin: 12px -12px -20px;
+  padding: 11px 12px;
+  background: linear-gradient(180deg, rgba(30,10,14,.92), rgba(20,6,9,.97));
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(239,95,95,.45);
+  box-shadow: 0 -8px 28px rgba(0,0,0,.55);
+}
+.stopbar.on { display: flex; }
+.stopbar .sb-info {
+  flex: 1 1 auto; min-width: 0;
+  font: 600 11px/1.35 ui-monospace, Menlo, monospace;
+  color: #fca5a5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.stopbar .sb-stop {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 16px;
+  font: 800 12px/1 system-ui, sans-serif;
+  letter-spacing: .3px;
+  color: #fff;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  border: 1px solid #ef4444;
+  border-radius: 9px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(220,38,38,.45);
+}
+.stopbar .sb-stop:hover { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.stopbar .sb-stop:active { transform: translateY(1px); }
+.stopbar .sb-stop::before {
+  content: "";
+  width: 11px; height: 11px; border-radius: 2px;
+  background: #fff;
+}
