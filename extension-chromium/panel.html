@@ -53,6 +53,20 @@
   <button class="tab" data-tab="settings">⚙ Ayarlar</button>
 </nav>
 
+<!-- ================= BAĞIŞ KARTI (açılışta 10 sn) ================= -->
+<div class="donate-toast" id="donateToast" role="complementary" aria-label="Destek">
+  <span class="dt-icon">☕</span>
+  <div class="dt-body">
+    <div class="dt-title">GhostPilot işinizi kolaylaştırıyor mu?</div>
+    <div class="dt-text">Açık kaynak ve tamamen ücretsiz. Bir kahve ısmarlarsanız geliştirme devam eder.</div>
+    <div class="dt-row">
+      <button class="dt-btn" id="dtSupport">☕ Destek ol</button>
+      <button class="dt-mute" id="dtMute">Bir daha gösterme</button>
+    </div>
+  </div>
+  <span class="dt-timer"></span>
+</div>
+
 <!-- ================= ACİL DURDURMA ÇUBUĞU ================= -->
 <div class="stopbar" id="stopbar" role="region" aria-label="Görev durdurma">
   <span class="sb-info" id="sbInfo">Ajan çalışıyor…</span>
@@ -213,8 +227,8 @@
   <!-- ---------- MİSYON: kalıcı hedef + otonom görev listesi ---------- -->
   <div class="card" id="missionCard">
     <div class="card-title">
-      <h2>Misyon kontrolü</h2>
-      <p class="hint">Hedefi tanımlayın. Ajan bağımsız bir görev planı oluşturur, adım adım yürütür ve her adımı sayfada doğrular.</p>
+      <h2>Misyon</h2>
+      <p class="hint">Çok adımlı hedef tanımlayın. Ajan planı kurar, yürütür ve doğrular.</p>
     </div>
 
     <div id="missionSetup">
@@ -232,8 +246,7 @@
 
       <button id="btnMissionStart" class="btn-primary" style="width:100%;margin-top:9px;">Misyonu başlat</button>
       <p class="micro" style="margin-top:6px;">
-        Ajan hedefi 4-10 adıma böler, her adımı çalıştırır, sayfaya bakıp doğrular.
-        Token biterse sağlayıcı değiştirir; tarayıcı kapansa bile kaldığı yerden sürer.
+        Kalıcıdır: tarayıcı kapansa bile kaldığı yerden devam eder.
       </p>
     </div>
 
@@ -306,10 +319,18 @@
 
   <div class="card">
     <div class="card-head">
-      <h3>Canlı kayıt</h3>
-      <span id="stepCounter" class="muted">Boşta</span>
+      <h3>Debug log</h3>
+      <div class="log-actions">
+        <span id="stepCounter" class="muted">Boşta</span>
+        <button id="btnCopyLog" class="icon-mini" title="Tüm günlüğü panoya kopyala" aria-label="Logu kopyala">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+        </button>
+        <button id="btnClearLog" class="icon-mini" title="Günlüğü temizle" aria-label="Logu temizle">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+        </button>
+      </div>
     </div>
-    <div id="logBox" class="log-box"></div>
+    <div id="logBox" class="log-box" role="log" aria-live="polite" aria-label="Debug günlüğü"></div>
   </div>
 
   <div class="card">

@@ -1362,9 +1362,125 @@
     }, 250);
   }
 
+  // ---------------------------------------------------------------- DEBUG LOG
+  // Logu panoya kopyala (zaman damgası + seviye dahil, düz metin)
+  function logAsText() {
+    const lines = [];
+    const box = $("logBox");
+    if (box) {
+      for (const el of box.querySelectorAll(".log-line")) {
+        lines.push(el.textContent);
+      }
+    }
+    return lines.join("\n");
+  }
+
+  async function copyLog() {
+    const text = logAsText();
+    if (!text) { showResult("info", "Kopyalanacak kayıt yok."); return; }
+    const btn = $("btnCopyLog");
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      // Yedek: textarea + execCommand
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch (_) {}
+      ta.remove();
+    }
+    if (btn) {
+      btn.classList.add("ok");
+      setTimeout(() => btn.classList.remove("ok"), 1200);
+    }
+    showResult("ok", `📋 ${text.split("\n").length} satır panoya kopyalandı.`);
+  }
+
+  async function clearLog() {
+    // Hem arayüzü hem arka plandaki birikmiş logu temizle
+    await sendBg({ type: "CLEAR_LOGS" });
+    const box = $("logBox");
+    if (box) box.innerHTML = "";
+    const sc = $("stepCounter");
+    if (sc) sc.textContent = "Boşta";
+    showResult("info", "Debug log temizlendi.");
+  }
+
+  // ---------------------------------------------------------------- BAĞIŞ KARTI
+  // Panel her açıldığında 10 sn görünür, sonra kendiliğinden kaybolur.
+  // "Bir daha gösterme" kalıcı olarak susturur.
+  let donateTimer = null, donateHideTimer = null;
+
+  function hideDonateToast(instant = false) {
+    const t = $("donateToast");
+    if (!t || !t.classList.contains("on")) return;
+    clearTimeout(donateTimer);
+    clearTimeout(donateHideTimer);
+    if (instant) { t.classList.remove("on"); return; }
+    t.classList.add("out");
+    donateHideTimer = setTimeout(() => {
+      t.classList.remove("on", "out");
+    }, 280);
+  }
+
+  async function showDonateToast() {
+    const t = $("donateToast");
+    if (!t) return;
+    const store = await new Promise((r) => chrome.storage.local.get(["panelDonate"], (x) => r(x || {})));
+    const pd = store.panelDonate || {};
+    if (pd.mutedForever) return;                        // kalıcı susturulmuş
+    if (pd.snoozeUntil && Date.now() < pd.snoozeUntil) return;  // erteleme
+
+    t.classList.remove("out");
+    t.classList.add("on");
+    // İlerleme çizgisini baştan başlat
+    const bar = t.querySelector(".dt-timer");
+    if (bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; }
+
+    donateTimer = setTimeout(() => hideDonateToast(), 10000);
+  }
+
+  async function setPanelDonate(patch) {
+    const store = await new Promise((r) => chrome.storage.local.get(["panelDonate"], (x) => r(x || {})));
+    const pd = { ...(store.panelDonate || {}), ...patch };
+    await new Promise((r) => chrome.storage.local.set({ panelDonate: pd }, r));
+  }
+
+  function wireDonateToast() {
+    const t = $("donateToast");
+    if (!t) return;
+    const sup = $("dtSupport");
+    if (sup) sup.addEventListener("click", async () => {
+      await sendBg({ type: "OPEN_URL", url: "https://buymeacoffee.com/btmcode" });
+      hideDonateToast();
+    });
+    const mute = $("dtMute");
+    if (mute) mute.addEventListener("click", async () => {
+      await setPanelDonate({ mutedForever: true, mutedAt: Date.now() });
+      hideDonateToast();
+      showResult("info", "Bağış kartı bir daha gösterilmeyecek.");
+    });
+    // Karta dokununca sayaç dursun (okuma süresi)
+    t.addEventListener("mouseenter", () => clearTimeout(donateTimer));
+    t.addEventListener("mouseleave", () => {
+      donateTimer = setTimeout(() => hideDonateToast(), 4000);
+    });
+  }
+
   // ---------------------------------------------------------------- init
   async function init() {
     buildProviderSelect();
+
+    wireDonateToast();
+    showDonateToast();
+
+    // Debug log butonları
+    const bc = $("btnCopyLog");
+    if (bc) bc.addEventListener("click", copyLog);
+    const bl = $("btnClearLog");
+    if (bl) bl.addEventListener("click", clearLog);
 
     // Durdurma çubuğu butonu
     const sb = $("btnStopTask");

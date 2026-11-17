@@ -2518,6 +2518,14 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   // Tüm sekmelerde overlay'i temizle — eklenti kaldırıldıktan sonra kalan
   // hayalet imleci de temizler (kullanıcı "imleç hâlâ görünüyor" dedi).
+  // Debug logu temizle
+  if (msg.type === "CLEAR_LOGS") {
+    agentState.logs = [];
+    broadcastUiState();
+    sendResponse({ ok: true });
+    return false;
+  }
+
   if (msg.type === "OVERLAY_OFF_ALL") {
     api.tabs.query({}, (tabs) => {
       let n = 0;
@@ -3003,6 +3011,19 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       .then((r) => sendResponse({ ok: true, result: r }))
       .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
+  }
+
+  // Bağış kartından dış bağlantı aç (OPEN_URL_TAB ile aynı işi yapar)
+  if (msg && msg.type === "OPEN_URL") {
+    const url = String(msg.url || "").trim();
+    if (/^https?:\/\//i.test(url)) {
+      openInNewTab(url)
+        .then((t) => sendResponse({ ok: true, tabId: t && t.id }))
+        .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+      return true;
+    }
+    sendResponse({ ok: false, error: "Geçersiz adres." });
+    return false;
   }
 
   if (msg && msg.type === "OPEN_URL_TAB") {
