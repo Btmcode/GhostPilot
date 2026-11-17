@@ -1368,7 +1368,16 @@ Her adımda SADECE tek bir geçerli JSON nesnesi döndür (başka açıklama met
   ASLA tıklama denemesi; bunun yerine {"action":"navigate","url":"https://hedef-site.com","newTab":true} kullan.
 - Bir siteye gitmek için tarayıcı arayüzüne (adres çubuğu, yeni sekme kutucukları) TIKLAMA.
   Sadece "navigate" eylemini kullan.
-- Blog/panel gibi sitelerde giriş yapılmamışsa kullanıcıya "done" ile durumu bildir, zorla denemeye devam etme.`;
+- Blog/panel gibi sitelerde giriş yapılmamışsa kullanıcıya "done" ile durumu bildir, zorla denemeye devam etme.
+
+ERKEN "done" YASAĞI (çok önemli):
+- "Sayfa zaten açık", "hedef URL zaten yüklü" gibi gerekçelerle done DEME.
+  Sayfanın açık olması görevin yapıldığı anlamına GELMEZ.
+- Kullanıcı bir DEĞİŞİKLİK istediyse (düzenle, yaz, oluştur, değiştir, kaydet),
+  gerçekten değiştirmeden done DEME. Önce alanı bul, değerini yaz, kaydet.
+- Sadece kullanıcı istediği sonuç sayfada GERÇEKTEN oluştuysa done de.
+- Eğer bir engel varsa (giriş yok, alan bulunamadı) bunu done ile değil,
+  {"action":"done","summary":"ENGELLENDİ: <sebep>"} biçiminde ENGEL olarak bildir.`;
 
 // Low-overhead fetch with exponential backoff for rate limits / transient 5xx
 async function fetchWithRetry(url, options, { retries = 2, timeoutMs = 45000 } = {}) {
@@ -2055,7 +2064,22 @@ async function missionStart(objective, opts = {}) {
 }
 
 // ---- 3) SIRADAKİ ADIMI ÇALIŞTIR ----
+let missionBusy = false;          // aynı anda tek misyon adımı
+let missionDoneLogged = {};       // misyon id → "tamamlandı" bir kez loglandı
+
 async function missionRunNext() {
+  // EŞZAMANLI ÇAĞRI KİLİDİ: alarm + setTimeout + kullanıcı aynı anda
+  // tetikleyince "Misyon tamamlandı" 6 kez loglanıyordu.
+  if (missionBusy) return { skipped: true, reason: "mission_busy" };
+  missionBusy = true;
+  try {
+    return await _missionRunNextInner();
+  } finally {
+    missionBusy = false;
+  }
+}
+
+async function _missionRunNextInner() {
   if (agentState.running) return { skipped: true, reason: "agent_busy" };
   let m = await missionLoad();
   // Kayıt henüz görünmüyorsa kısa süre bekle (yazma sıralaması yarışı)
@@ -2074,7 +2098,10 @@ async function missionRunNext() {
     m.status = "done";
     m.progress = 100;
     await missionSave(m);
-    pushLog("success", `🎉 Misyon tamamlandı: ${m.title}`);
+    if (!missionDoneLogged[m.id]) {
+      missionDoneLogged[m.id] = true;
+      pushLog("success", `🎉 Misyon tamamlandı: ${m.title}`);
+    }
     try { await api.alarms.clear(MISSION_ALARM); } catch (_) {}
     return { done: true };
   }
@@ -2194,11 +2221,17 @@ async function missionRunNext() {
   if (m2.steps.every((x) => x.status === "done" || x.status === "skipped")) {
     m2.status = "done";
     m2.progress = 100;
-    pushLog("success", `🎉 Misyon tamamlandı: ${m2.title}`);
+    if (!missionDoneLogged[m2.id]) {
+      missionDoneLogged[m2.id] = true;
+      pushLog("success", `🎉 Misyon tamamlandı: ${m2.title}`);
+    }
     try { await api.alarms.clear(MISSION_ALARM); } catch (_) {}
   } else if (m2.cycles >= m2.maxCycles) {
     m2.status = "paused";
     pushLog("warn", `Döngü sınırına ulaşıldı (${m2.maxCycles}). Misyon duraklatıldı.`);
+    try { await api.alarms.clear(MISSION_ALARM); } catch (_) {}
+  } else if (m2.status === "done" || m2.status === "paused") {
+    // Bitti/duraklatıldı → yeni döngü BAŞLATMA (sonsuz "tamamlandı" logunu önler)
     try { await api.alarms.clear(MISSION_ALARM); } catch (_) {}
   } else if (m2.autoContinue) {
     // Kendiliğinden devam
@@ -2585,6 +2618,30 @@ async function runAutonomousTask(goal, explicitTabId = null, opts = {}) {
 
       if (decision.action === "done") {
         const summary = decision.summary || "Görev başarıyla bitirildi.";
+        // ERKEN DONE DENETİMİ: hiçbir eylem yapılmadan "done" denirse kabul etme.
+        const history = journal.history || [];
+        // "İş yapıldı" sayılan kayıtlar (rejected_done sayılmaz)
+        const realActions = history.filter((h) =>
+          h && h.type && !["rejected_done", "note", "snapshot"].includes(h.type));
+        const didWork = realActions.length > 0;
+        const isBlocked = /ENGELLENDİ|engellendi|giriş yapılmamış|login|bulunamadı/i.test(summary);
+        // Hiç gerçek eylem yok VE engel bildirmiyor → erken done
+        agentState.rejectCount = agentState.rejectCount || 0;
+        if (!didWork && !isBlocked && agentState.rejectCount < 2) {
+          agentState.rejectCount++;
+          // Ajan hiçbir eylem yapmadı → reddet ve devam etmesini söyle
+          pushLog("warn", `⚠ Ajan hiçbir işlem yapmadan "done" dedi — reddedildi, görev sürüyor.`);
+          journal.history = journal.history || [];
+          journal.history.push({ type: "rejected_done", at: Date.now(), summary: summary.slice(0, 120) });
+          await journalSave(journal);
+          messages.push({
+            role: "system",
+            content: "ERKEN DONE REDDEDİLDİ. Hiçbir eylem yapmadın. " +
+              "Şimdi sayfayı incele, gereken alanı bul ve GERÇEK eylemi yap (click/type/key). " +
+              "Kullanıcının istediği değişiklik sayfada oluşmadan done deme."
+          });
+          continue;   // döngüye devam
+        }
         agentState.ranOnce = true;   // ajan gerçekten çalıştı
         pushLog("success", `Tamamlandı: ${summary}`);
         await journalPatch({ status: "done", summary, step });
@@ -3233,7 +3290,14 @@ if (api.alarms) {
       connectDaemon();
     }
     if (alarm.name === MISSION_ALARM) {
-      missionTick().catch(() => {});
+      // Misyon bitmiş/duraklatılmışsa alarmı temizle, boşuna tetikleme
+      missionLoad().then((m) => {
+        if (!m || m.status !== "running") {
+          api.alarms.clear(MISSION_ALARM).catch(() => {});
+          return;
+        }
+        missionTick().catch(() => {});
+      }).catch(() => {});
     }
   });
 }
